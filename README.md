@@ -1,9 +1,13 @@
 # ⚡ 反拉普拉斯轉換機 (Inverse Laplace Transform · Circuit Solver)
 
-一個**純離線、雙擊即開**的網頁工具：把 s 域函數 F(s) 反轉換回時域 f(t)，並且能**畫電路圖**自動建立 s 域模型求解（含初始條件、互感、二極體、開關、脈波源、多波形比較、**多探針疊圖**、**週期穩態 PSS**）。切換式電源（Buck／同步 Buck）可直接求穩態。
+一個**純離線、雙擊即開**的網頁工具：把 s 域函數 F(s) 反轉換回時域 f(t)，並且能**畫電路圖**自動建立 s 域模型求解（含初始條件、互感、二極體、開關、脈波源、多波形比較、**多探針疊圖**、**週期穩態 PSS**）。切換式電源（Buck／同步 Buck／Boost）可直接求穩態。
 
-## 怎麼開始
-用瀏覽器（Edge / Chrome / Firefox）打開 **`index.html`** 即可，免安裝、免連網。
+## 🌐 線上使用（免下載）
+👉 **https://souptomorrow-collab.github.io/inverse-laplace-circuit-solver/**
+（純前端、開啟即用；資料只在你的瀏覽器內運算，不上傳。）
+
+## 怎麼開始（離線）
+也可下載後用瀏覽器（Edge / Chrome / Firefox）打開 **`index.html`**，免安裝、免連網。
 > `index.html` 與 `engine.js` 必須放在**同一個資料夾**。
 
 ---
@@ -93,6 +97,9 @@
 | `index.html` | 主程式（介面、電路編輯器、繪圖、自我測試）|
 | `engine.js` | 運算核心（反轉換、解析器、電路 MNA + 分段拉氏），無 DOM 相依 |
 | `proto*.py` | 開發時對照 SymPy/數值驗證演算法的 Python 腳本（執行工具不需要）|
+
+## 授權
+本專案以 **MIT License** 釋出（見 [`LICENSE`](LICENSE)）——任何人都可自由使用、修改、散布。
 
 ---
 以 [Claude Code](https://claude.com/claude-code) 開發；演算法經 SymPy／數值積分與瀏覽器實跑雙重驗證。
