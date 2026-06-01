@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/
+
+# scratch / test artifacts (kept out of the repo)
+debug*.html
+dbg_*.html
+test_*.html
+dom*.html
+*.tmp
+__pycache__/
+*.pyc

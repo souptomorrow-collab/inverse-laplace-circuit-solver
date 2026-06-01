@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>反拉普拉斯轉換機 — Inverse Laplace Transform</title>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#161b22; --panel2:#1c2330; --line:#2d3645;
+    --txt:#e6edf3; --muted:#9aa7b5; --accent:#4c9aff; --accent2:#58d6a0;
+    --warn:#ffb454; --err:#ff6b6b; --grid:#222a36;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI",system-ui,"Microsoft JhengHei",sans-serif;font-size:15px;line-height:1.5}
+  header{padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#11151c,#161b22)}
+  header h1{margin:0;font-size:20px;font-weight:650}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:4px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .tab{padding:11px 18px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:550;user-select:none}
+  .tab:hover{color:var(--txt)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .view{display:none;padding:18px;max-width:1340px;margin:0 auto}
+  .view.active{display:block}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .card h2{margin:0 0 10px;font-size:15px;color:var(--accent);font-weight:600}
+  label{color:var(--muted);font-size:13px}
+  input[type=text],input[type=number],select{
+    background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+    border-radius:7px;padding:7px 9px;font-size:14px;font-family:inherit}
+  input[type=text]:focus,input[type=number]:focus,select:focus{outline:none;border-color:var(--accent)}
+  button{background:var(--accent);color:#001;border:none;border-radius:7px;padding:9px 15px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+  button.ghost:hover{border-color:var(--accent);color:var(--accent)}
+  button.tool{padding:7px 11px;font-size:13px}
+  button.tool.active{background:var(--accent);color:#001;border-color:var(--accent)}
+  .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--muted);font-family:"Cascadia Code",Consolas,monospace}
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .chip.on{background:var(--accent);color:#001;border-color:var(--accent)}
+  .result{font-size:21px;padding:13px 15px;background:var(--panel2);border-radius:8px;border:1px solid var(--line);overflow-x:auto;min-height:28px}
+  .result sup{font-size:.7em} .result sub{font-size:.7em}
+  .mono{font-family:"Cascadia Code",Consolas,monospace}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  .err{color:var(--err)} .ok{color:var(--accent2)}
+  .frac{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;margin:0 2px}
+  .frac .n{border-bottom:1.5px solid var(--txt);padding:0 8px} .frac .d{padding:2px 8px 0}
+  canvas{display:block;background:#0b0e14;border:1px solid var(--line);border-radius:8px;max-width:100%}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left} th{color:var(--muted);font-weight:600}
+  .pill{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600}
+  .pill.pass{background:rgba(88,214,160,.15);color:var(--accent2)} .pill.fail{background:rgba(255,107,107,.15);color:var(--err)}
+  .grid2{display:grid;grid-template-columns:1fr 340px;gap:14px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  .comp-list{max-height:280px;overflow:auto}
+  .comp-row{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--grid);flex-wrap:wrap}
+  .comp-row .tag{font-weight:700;width:38px;color:var(--accent)}
+  .comp-row input,.comp-row select{padding:4px 6px;font-size:12px}
+  .comp-row .w{width:62px}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px}
+  a{color:var(--accent)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px}
+  .legend span b{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px}
+  .progress{display:none;margin-top:10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .progress.active{display:block}
+  .progress .plabel{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:7px}
+  .progress .ptrack{height:9px;background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .progress .pfill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;transition:width .12s linear}
+  .pspin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ 反拉普拉斯轉換機 <span class="muted" style="font-size:14px;font-weight:400">Inverse Laplace · Circuit Solver</span></h1>
+  <p>有理函數任意階（重根/複數極點/δ/延遲）· 畫電路自動 s 域求解（初始條件、互感、二極體 V_f、開關 R_on/PWM/互補、脈波、多探針疊圖、週期穩態 PSS）· 全離線</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-view="formula">📐 公式反轉換</div>
+  <div class="tab" data-view="circuit">🔌 電路求解</div>
+  <div class="tab" data-view="help">📖 說明 / 自我測試</div>
+</div>
+
+<!-- ============ FORMULA VIEW ============ -->
+<div class="view active" id="view-formula">
+  <div class="card">
+    <h2>輸入 F(s)</h2>
+    <div class="row">
+      <input type="text" id="fInput" class="mono" style="flex:1;min-width:260px" placeholder="例如  (s+3)/(s^2+2s+5)" value="(s+3)/(s^2+2*s+5)">
+      <button id="fGo">計算 f(t)　▶</button>
+    </div>
+    <div class="chips" id="fChips"></div>
+    <div class="hint">支援 <span class="mono">+ − * / ^</span>、括號、隱含乘法（<span class="mono">2s</span>、<span class="mono">(s+1)(s+2)</span>）、<span class="mono">pi</span>、時間延遲 <span class="mono">exp(-2*s)</span> 或 <span class="mono">e^(-2s)</span>。變數用小寫 <span class="mono">s</span>。</div>
+  </div>
+  <div id="fError" class="card" style="display:none;border-color:var(--err)"><span class="err mono" id="fErrorMsg"></span></div>
+  <div id="fOut" style="display:none">
+    <div class="card"><h2>結果　f(t)</h2>
+      <div class="result" id="fResult"></div>
+      <div class="row" style="margin-top:10px"><button class="ghost small" id="fCopy">📋 複製純文字</button><span class="muted small" id="fNote"></span></div>
+    </div>
+    <div class="grid2">
+      <div class="card" style="margin-bottom:0"><h2>波形　f(t) vs t</h2>
+        <canvas id="fPlot" width="800" height="360"></canvas>
+        <div class="row" style="margin-top:10px"><label>t<sub>max</sub>:</label>
+          <input type="number" id="fTmax" class="w" style="width:90px" step="0.5" min="0.1"><button class="ghost small" id="fReplot">重繪</button><span class="muted small">（留空＝自動）</span></div>
+      </div>
+      <div class="card" style="margin-bottom:0"><h2>分析</h2><div id="fAnalysis" class="small"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CIRCUIT VIEW ============ -->
+<div class="view" id="view-circuit">
+  <div class="card">
+    <h2>電路編輯器</h2>
+    <div class="row" style="margin-bottom:8px">
+      <button class="tool ghost active" data-tool="select">↖ 選取/移動</button>
+      <button class="tool ghost" data-tool="R">電阻 R</button>
+      <button class="tool ghost" data-tool="L">電感 L</button>
+      <button class="tool ghost" data-tool="C">電容 C</button>
+      <button class="tool ghost" data-tool="V">電壓源 V</button>
+      <button class="tool ghost" data-tool="I">電流源 I</button>
+      <button class="tool ghost" data-tool="D">二極體 D</button>
+      <button class="tool ghost" data-tool="SW">開關 SW</button>
+      <button class="tool ghost" data-tool="W">導線</button>
+      <button class="tool ghost" data-tool="GND">接地 ⏚</button>
+      <span style="width:1px;height:22px;background:var(--line)"></span>
+      <button class="ghost small" id="cRotate">⟳ 旋轉 (R)</button>
+      <button class="ghost small" id="cCopy2">⧉ 複製 (Ctrl+C)</button>
+      <button class="ghost small" id="cCut">✂ 剪下 (Ctrl+X)</button>
+      <button class="ghost small" id="cPaste">⎘ 貼上 (Ctrl+V)</button>
+      <button class="ghost small" id="cUndo">↶ 復原 (Ctrl+Z)</button>
+      <button class="ghost small" id="cDelSel">✕ 刪除選取 (Del)</button>
+    </div>
+    <canvas id="cCanvas" width="800" height="500" tabindex="0"></canvas>
+    <div class="hint" id="cHint">選「選取/移動」可拖曳元件、點選後按 <kbd>R</kbd> 旋轉、<kbd>Del</kbd> 刪除、<kbd>Esc</kbd> 回選取。放置工具：點兩個格點。探針／節點初始電壓／互感請用右側「量測與設定」面板。</div>
+    <div class="row" style="margin-top:10px">
+      <button id="cSolve">求解輸出　▶</button>
+      <label class="small" style="user-select:none;cursor:pointer" title="直接求週期穩態（不模擬冗長暫態）——切換式電源建議勾選"><input type="checkbox" id="cSteady" style="vertical-align:-2px"> 穩態 (PSS)</label>
+      <button class="ghost" id="cClear">清空</button>
+      <button class="ghost" id="cEx1">RC 低通</button>
+      <button class="ghost" id="cEx2">RLC 串聯</button>
+      <button class="ghost" id="cEx3">半波整流(二極體)</button>
+      <button class="ghost" id="cEx4">變壓器(互感)</button>
+      <button class="ghost" id="cEx5">Buck(二極體)</button>
+      <button class="ghost" id="cEx6">同步 Buck</button>
+      <button class="ghost" id="cEx7">Boost 升壓</button>
+      <span class="muted small" id="cProbe">探針：未設定</span>
+    </div>
+    <div class="progress" id="cProgress">
+      <div class="plabel"><span><span class="pspin"></span><span id="cProgLabel">計算中…</span></span><span class="mono" id="cProgPct">0%</span></div>
+      <div class="ptrack"><div class="pfill" id="cProgFill"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>多波形比較　<span class="muted small">（選 ≥1 種波形，套用到第一個電壓源並疊圖）</span></h2>
+    <div class="chips" id="mwChips"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card" style="margin-bottom:0"><h2>元件參數</h2>
+      <div class="comp-list" id="cList"><span class="muted small">尚無可調元件</span></div>
+    </div>
+    <div class="card" style="margin-bottom:0"><h2>量測與設定</h2>
+      <div id="cExtra" class="small"></div>
+    </div>
+  </div>
+
+  <div id="cError" class="card" style="display:none;border-color:var(--err)"><span class="err mono" id="cErrorMsg"></span></div>
+  <div id="cOut" style="display:none">
+    <div class="card"><h2>輸出</h2><div class="result" id="cFs"></div></div>
+    <div class="card"><h2>波形</h2><canvas id="cPlot" width="960" height="420"></canvas>
+      <div class="row" style="margin-top:8px"><label>t<sub>max</sub>:</label><input type="number" id="cTmax" class="w" style="width:120px" step="any"><button class="ghost small" id="cReplot">重繪</button><button class="ghost small" id="cResetView" title="恢復原本視窗大小">⤢ 重置縮放</button><span class="muted small">（拖曳平移、滾輪縮放）</span><span class="muted small" id="cNote"></span></div>
+      <div class="legend" id="cLegend"></div></div>
+    <div class="card"><h2>分析</h2><div id="cAnalysis" class="small"></div></div>
+  </div>
+</div>
+
+<!-- ============ HELP VIEW ============ -->
+<div class="view" id="view-help">
+  <div class="card"><h2>使用說明</h2>
+    <p class="small"><b>公式反轉換：</b>輸入 F(s) → f(t)（t≥0）。用部分分式/留數法，支援任意階有理函數、重根、複數極點、improper（δ 衝激）、時間延遲。</p>
+    <p class="small"><b>電路求解：</b>工具列只放「元件」（R/L/C/電源/二極體/開關/導線/接地）。<b>選取/移動</b>工具：空白處拖曳<b>框選</b>多個（<kbd>Shift</kbd> 加選）、拖本體移動、拖綠色端點改尺寸/角度（<kbd>Alt</kbd> 任意角度）、<kbd>R</kbd> 旋轉、<kbd>Ctrl+C/X/V</kbd> <b>複製/剪下/貼上</b>、<kbd>Del</kbd> 刪除、<kbd>Ctrl+Z</kbd> 復原、<kbd>Esc</kbd> 回選取。元件不可重疊。<b>探針、節點初始電壓、互感</b>都在右側「<b>量測與設定</b>」面板操作。</p>
+    <ul class="small">
+      <li><b>初始條件：</b>電容可設 v(0)、電感可設 i(0)（元件參數面板）；節點可在「量測與設定」面板按「＋指定節點」點一下格點，再於面板輸入電壓（不用彈窗）。</li>
+      <li><b>互感：</b>在「量測與設定」面板選兩個電感按「建立耦合」，以耦合係數 k 或互感 M（可切換）設定。</li>
+      <li><b>探針：</b>面板按「＋電壓探針」後在畫布點兩個節點；電流探針用面板下拉選元件。可放多個、疊圖比較。<b>方向性</b>：電壓探針 V=V(+)−V(−)、電流探針有參考箭頭（沿元件 a→b）；選取後按 <kbd>F</kbd> 或面板「⇄」可<b>反向</b>（電壓交換 +/−、電流反轉箭頭，數值變號）。</li>
+      <li><b>二極體 / 開關：</b>理想模型 + <b>分段拉氏</b>。二極體用事件偵測自動判斷導通，可設順向壓降 <b>V<sub>f</sub></b>；開關可設初始狀態+切換時間 t<sub>s</sub> 或 <b>PWM</b>（T、duty），可設導通電阻 <b>R<sub>on</sub></b>，PWM 勾「互補」即同步整流下臂。</li>
+      <li><b>同步 Buck：</b>上臂 PWM + 互補下臂開關（取代飛輪二極體）。見「同步 Buck」範例。</li>
+      <li><b>週期穩態 (PSS)：</b>勾「<b>穩態 (PSS)</b>」直接以打靶法求切換週期的穩態波形（不模擬冗長暫態）——<b>切換式電源建議用此</b>。</li>
+      <li><b>多探針：</b>可同時放多個電壓/電流探針，自動疊圖比較（各一色）。</li>
+      <li><b>脈波源：</b>電壓/電流源波形選「脈波」，設週期 T<sub>s</sub> 與工作比 duty（用平移步階響應疊加）。</li>
+      <li><b>多波形比較：</b>單一探針時，勾選多種波形套用到第一個電壓源並疊圖比較。</li>
+    </ul>
+    <p class="small muted"><b>範圍與限制：</b>拉氏法僅適用線性非時變(LTI)；二極體（非線性）、開關（時變）以理想化＋分段拉氏處理（可加 V<sub>f</sub>/R<sub>on</sub>，多二極體複雜組合可能受限）。µs 等級電路自動做時間正規化以維持數值精度。<b>極低損耗高 Q 切換電路的長暫態</b>會累積分段誤差而難收斂，請改用<b>穩態 (PSS)</b> 或加入實際損耗。重根偵測對相距 &lt;~1% 的相異極點可能誤判。</p>
+  </div>
+  <div class="card"><h2>引擎自我測試</h2>
+    <button class="ghost" id="runTests">▶ 執行自我測試</button>
+    <div id="testOut" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<script src="engine.js"></script>
+<script>
+const E = window.LaplaceEngine;
+const $ = s => document.querySelector(s);
+const COLORS = ['#4c9aff','#58d6a0','#ffb454','#ff6b6b','#c792ea','#7fdbff'];
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  t.classList.add('active'); $('#view-' + t.dataset.view).classList.add('active');
+  if (t.dataset.view === 'circuit' && typeof resizeCanvas === 'function') resizeCanvas();   // size to the now-visible card
+});
+
+/* ---------- F(s) fraction ---------- */
+function fracHTML(numC, denC) {
+  const n = E.formatPolyReal(numC, true), d = E.formatPolyReal(denC, true);
+  if (d === '1') return n;
+  return '<span class="frac"><span class="n">' + n + '</span><span class="d">' + d + '</span></span>';
+}
+
+/* =========================================================
+ *  Unified plotting over an array of Signals
+ *  Signal = {evalAt(t), deltas:[{at,order,coeff}], tEndHint, label}
+ * ========================================================= */
+function plotSignals(canvas, signals, override, view) {
+  const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const ml = 56, mr = 16, mt = 14, mb = 30, pw = W - ml - mr, ph = H - mt - mb;
+  let xMin, xMax;
+  if (view) { xMin = view.xMin; xMax = view.xMax; }
+  else { xMin = 0; xMax = override && override > 0 ? override : Math.max.apply(null, signals.map(s => s.tEndHint || 10)); }
+  if (!isFinite(xMax) || xMax <= xMin) xMax = xMin + 10;
+  const N = 760, span = xMax - xMin, ts = [];
+  let dymin = Infinity, dymax = -Infinity;
+  const curves = signals.map((sig, si) => {
+    const ys = [];
+    // piecewise (switching/PSS) signals are only valid within the computed window;
+    // beyond it the data would be fabricated, so don't draw. Analytic results are
+    // exact for any t≥0. All responses are 0 before t=0 (causal / one-sided).
+    const tmax = sig.piecewise ? (sig.tEndHint || 0) * (1 + 1e-9) : Infinity;
+    for (let i = 0; i < N; i++) {
+      const t = xMin + span * i / (N - 1); if (si === 0) ts.push(t);
+      let y;
+      if (t < 0) y = 0;
+      else if (t > tmax) { ys.push(NaN); continue; }
+      else y = sig.evalAt(t);
+      if (!isFinite(y)) { ys.push(NaN); continue; }
+      ys.push(y); dymin = Math.min(dymin, y); dymax = Math.max(dymax, y);
+    }
+    return ys;
+  });
+  let yMin, yMax;
+  if (view) { yMin = view.yMin; yMax = view.yMax; }
+  else {
+    yMin = dymin; yMax = dymax;
+    if (!isFinite(yMin)) { yMin = -1; yMax = 1; }
+    if (Math.abs(yMax - yMin) < 1e-9) { yMax += 1; yMin -= 1; }
+    const pad = (yMax - yMin) * 0.12; yMin -= pad; yMax += pad;
+    if (yMin > 0) yMin = -0.05 * yMax; if (yMax < 0) yMax = -0.05 * yMin;
+  }
+  const X = t => ml + pw * (t - xMin) / (xMax - xMin), Y = v => mt + ph * (1 - (v - yMin) / (yMax - yMin));
+  ctx.strokeStyle = '#222a36'; ctx.lineWidth = 1; ctx.fillStyle = '#9aa7b5'; ctx.font = '11px Consolas';
+  for (const tv of niceTicks(xMin, xMax, 8)) { const px = X(tv); if (px < ml - 1 || px > ml + pw + 1) continue; ctx.beginPath(); ctx.moveTo(px, mt); ctx.lineTo(px, mt + ph); ctx.stroke(); ctx.textAlign = 'center'; ctx.fillText(fmt(tv), px, H - 10); }
+  for (const vv of niceTicks(yMin, yMax, 6)) { const py = Y(vv); if (py < mt - 1 || py > mt + ph + 1) continue; ctx.beginPath(); ctx.moveTo(ml, py); ctx.lineTo(ml + pw, py); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(fmt(vv), ml - 6, py + 3); }
+  ctx.strokeStyle = '#3a4555'; ctx.lineWidth = 1.4;
+  if (yMin <= 0 && yMax >= 0) { ctx.beginPath(); ctx.moveTo(ml, Y(0)); ctx.lineTo(ml + pw, Y(0)); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(ml, mt); ctx.lineTo(ml, mt + ph); ctx.stroke();
+  ctx.save(); ctx.beginPath(); ctx.rect(ml, mt, pw, ph); ctx.clip();   // keep curves inside the plot when zoomed
+  curves.forEach((ys, ci) => {
+    ctx.strokeStyle = COLORS[ci % COLORS.length]; ctx.lineWidth = 2; ctx.beginPath();
+    let pen = false;
+    for (let i = 0; i < N; i++) {
+      const y = ys[i]; if (!isFinite(y)) { pen = false; continue; }
+      const px = X(ts[i]), py = Y(y);
+      if (!pen) { ctx.moveTo(px, py); pen = true; } else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  });
+  ctx.restore();
+  // mark the computed-window boundary if the view extends past it (piecewise/switching)
+  const tComputed = Math.max.apply(null, signals.map(s => s.piecewise ? (s.tEndHint || 0) : 0));
+  if (tComputed > 0 && xMax > tComputed * 1.0001 && tComputed >= xMin) {
+    const px = X(tComputed);
+    ctx.save(); ctx.strokeStyle = 'rgba(154,167,181,.45)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px, mt); ctx.lineTo(px, mt + ph); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = '#9aa7b5'; ctx.font = '10px Segoe UI'; ctx.textAlign = 'left'; ctx.fillText('計算上限', px + 3, mt + 11);
+  }
+  // impulses (from first signal only, to avoid clutter)
+  for (const d of (signals[0] ? signals[0].deltas : [])) {
+    if (d.at < xMin || d.at > xMax) continue;
+    const px = X(d.at), up = d.coeff >= 0, yTip = up ? mt + 8 : mt + ph - 8;
+    ctx.strokeStyle = '#ff6b6b'; ctx.fillStyle = '#ff6b6b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px, Y(0)); ctx.lineTo(px, yTip); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px, yTip); ctx.lineTo(px - 5, yTip + (up ? 9 : -9)); ctx.lineTo(px + 5, yTip + (up ? 9 : -9)); ctx.closePath(); ctx.fill();
+    ctx.textAlign = 'left'; ctx.font = '12px Consolas';
+    ctx.fillText((d.order === 0 ? 'δ' : "δ'") + '×' + E.fmtNum(d.coeff), px + 7, yTip + (up ? 14 : -6));
+  }
+  ctx.fillStyle = '#9aa7b5'; ctx.textAlign = 'center'; ctx.font = '12px Segoe UI'; ctx.fillText('t (s)', ml + pw / 2, H - 0);
+  canvas._plot = { ml: ml, mt: mt, pw: pw, ph: ph, xMin: xMin, xMax: xMax, yMin: yMin, yMax: yMax };   // mapping for pan/zoom
+}
+function niceTicks(lo, hi, n) {
+  const span = hi - lo; if (span <= 0) return [lo];
+  const raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+  const step = mag * (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10);
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) out.push(Math.abs(v) < step * 1e-6 ? 0 : v);
+  return out;
+}
+function fmt(v) { if (Math.abs(v) < 1e-9) return '0'; const a = Math.abs(v); if (a >= 1000 || a < 0.01) return v.toExponential(1); return (Math.round(v * 1000) / 1000).toString(); }
+function signalFromResult(result, label) {
+  return { evalAt: t => E.evalFormula(result, t), deltas: E.collectDeltas(result), tEndHint: E.tEndForResult(result), label: label || '' };
+}
+
+/* ===================== FORMULA TAB ===================== */
+const examples = ['(s+3)/(s^2+2*s+5)', '1/(s+1)^2', '1/(s*(s+1))', 's/(s^2+4)', '6/(s^2+9)', '(2*s+1)/((s+1)*(s+2)^2)', '1/s^3', 'exp(-2*s)/(s+1)', '(s^2+1)/(s+1)', '1/(s^2+2*s+2)^2', '10/((s+1)*(s^2+4))'];
+const fchips = $('#fChips');
+examples.forEach(ex => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = ex; c.onclick = () => { $('#fInput').value = ex; computeFormula(); }; fchips.appendChild(c); });
+let lastFormulaResult = null;
+function computeFormula() {
+  const src = $('#fInput').value.trim(); $('#fError').style.display = 'none';
+  if (!src) { $('#fOut').style.display = 'none'; $('#fError').style.display = 'block'; $('#fErrorMsg').textContent = '⚠ 請輸入 F(s) 公式，例如 (s+3)/(s^2+2*s+5)'; return; }
+  try {
+    const result = E.invertFormula(src); lastFormulaResult = result; $('#fOut').style.display = 'block';
+    if (result.special) {
+      $('#fResult').innerHTML = 'f(t) = ' + result.html; $('#fNote').textContent = result.note || '';
+      $('#fAnalysis').innerHTML = '<span class="muted">非有理特殊轉換（查表）。</span>';
+      plotSignals($('#fPlot'), [{ evalAt: t => result.evalFn ? result.evalFn(t) : NaN, deltas: [], tEndHint: 10 }]);
+    } else {
+      $('#fResult').innerHTML = 'f(t) = ' + E.renderFormula(result); $('#fNote').textContent = '';
+      renderAnalysis(result, $('#fAnalysis')); $('#fTmax').value = '';
+      plotSignals($('#fPlot'), [signalFromResult(result, 'f(t)')]);
+    }
+  } catch (e) { $('#fOut').style.display = 'none'; $('#fError').style.display = 'block'; $('#fErrorMsg').textContent = '⚠ ' + e.message; }
+}
+function renderAnalysis(result, el, opts) {
+  const poles = E.polesOf(result); let h = '';
+  if (!(opts && opts.skipFs)) result.blocks.forEach(b => {
+    const pre = b.delay > 1e-9 ? ('e<sup>−' + E.fmtNum(b.delay) + 's</sup>· ') : '';
+    h += '<div style="margin-bottom:6px">F(s)' + (result.blocks.length > 1 ? ' 項' : '') + ' = ' + pre + fracHTML(b.num, b.den) + '</div>';
+  });
+  if (poles.length) {
+    h += '<table style="margin-top:8px"><tr><th>極點 s</th><th>重數</th></tr>';
+    poles.forEach(p => { const im = p.pole.im; const ps = E.fmtNum(p.pole.re) + (Math.abs(im) < 1e-7 ? '' : (im > 0 ? ' + ' : ' − ') + E.fmtNum(Math.abs(im)) + 'j'); h += '<tr><td class="mono">' + ps + '</td><td>' + p.mult + '</td></tr>'; });
+    h += '</table>';
+    const marg = poles.some(p => Math.abs(p.pole.re) < 1e-7);
+    h += '<div class="small" style="margin-top:8px">穩定性：' + (poles.some(p => p.pole.re > 1e-7) ? '<span class="err">發散</span>' : marg ? '<span style="color:var(--warn)">臨界穩定</span>' : '<span class="ok">穩定</span>') + '</div>';
+  }
+  el.innerHTML = h || '<span class="muted">—</span>';
+}
+$('#fGo').onclick = computeFormula;
+$('#fInput').addEventListener('keydown', e => { if (e.key === 'Enter') computeFormula(); });
+$('#fReplot').onclick = () => { if (lastFormulaResult && !lastFormulaResult.special) plotSignals($('#fPlot'), [signalFromResult(lastFormulaResult, 'f(t)')], parseFloat($('#fTmax').value) || 0); };
+$('#fCopy').onclick = () => {
+  if (!lastFormulaResult) return;
+  let txt = lastFormulaResult.special ? lastFormulaResult.text : lastFormulaResult.blocks.map(b => { let g = E.formatTD(b.td, false); return b.delay > 1e-9 ? '[' + g.replace(/t/g, '(t-' + E.fmtNum(b.delay) + ')') + ']*u(t-' + E.fmtNum(b.delay) + ')' : g; }).join(' + ');
+  navigator.clipboard.writeText('f(t) = ' + txt).then(() => { $('#fCopy').textContent = '✓ 已複製'; setTimeout(() => $('#fCopy').textContent = '📋 複製純文字', 1200); });
+};
+
+/* ===================== CIRCUIT TAB ===================== */
+const cv = $('#cCanvas'), cctx = cv.getContext('2d');
+let STEP = 44, OX = 30, OY = 30, GW = 18, GH = 11;   // grid (recomputed by resizeCanvas)
+let hover = null;                                     // grid point under the cursor (for preview/highlight)
+let components = [], couplings = [], nodeIC = {}, probes = [];   // multiple probes (V and/or I) overlaid
+let tool = 'select', pending = null, selComps = [], counters = {}, uidc = 1;   // selComps: multi-selected components
+let selectedProbe = -1;                               // index of the canvas-selected probe (or -1)
+let clipboard = null, pasteOff = 0;                   // copy/cut/paste buffer
+const soleSel = () => selComps.length === 1 ? selComps[0] : null;   // the single selected component, or null
+let drag = null, undoStack = [];
+function probeAt(mx, my){                             // probe marker under the cursor → probe index, or -1
+  for (let i = probes.length - 1; i >= 0; i--) {
+    const p = probes[i];
+    if (p.kind === 'V') { if (Math.hypot(mx - gx2px(p.a.x), my - gx2px(p.a.y)) < 12 || Math.hypot(mx - gx2px(p.b.x), my - gx2px(p.b.y)) < 12) return i; }
+    else if (p.comp && p.comp.b) { const cx = (gx2px(p.comp.a.x) + gx2px(p.comp.b.x)) / 2, cy = (gx2px(p.comp.a.y) + gx2px(p.comp.b.y)) / 2; if (Math.hypot(mx - cx, my - cy) < 20) return i; }
+  }
+  return -1;
+}
+function endpointHandleAt(mx, my, c){    // which endpoint handle of c is under the cursor ('a'/'b'/null)
+  if (!c || !c.b) return null;
+  if (Math.hypot(mx - gx2px(c.a.x), my - gx2px(c.a.y)) < 10) return 'a';
+  if (Math.hypot(mx - gx2px(c.b.x), my - gx2px(c.b.y)) < 10) return 'b';
+  return null;
+}
+// V-probe endpoints sitting on a moved component's node should travel with it
+function probeFollowNodes(comps){
+  const pts = new Set();
+  comps.forEach(c => { pts.add(c.a.x + ',' + c.a.y); if (c.b) pts.add(c.b.x + ',' + c.b.y); });
+  const out = [];
+  probes.forEach(p => { if (p.kind === 'V') ['a', 'b'].forEach(e => { if (pts.has(p[e].x + ',' + p[e].y)) out.push({ p: p, e: e, orig: { ...p[e] } }); }); });
+  return out;
+}
+const mwWaves = new Set();   // multi-waveform compare selection
+
+function gx2px(g){ return OX + g * STEP; }
+function px2g(p){ return Math.round((p - OX) / STEP); }
+function nextId(t){ counters[t] = (counters[t] || 0) + 1; return counters[t]; }
+function keyOf(p){ return p.x + ',' + p.y; }
+function byUid(u){ return components.find(c => c._uid === u); }
+
+/* ---- undo ---- */
+function snapshot(){
+  return JSON.stringify({
+    components: components.map(c => ({ ...c })),
+    couplings: couplings.map(k => ({ aUid: k.a._uid, bUid: k.b._uid, M: k.M, k: k.k, useK: k.useK })),
+    nodeIC: { ...nodeIC }, probes: probes.map(p => ({ kind: p.kind, a: p.a, b: p.b, compUid: p.comp ? p.comp._uid : undefined })),
+    counters: { ...counters }, uidc: uidc,
+  });
+}
+function pushUndo(){ undoStack.push(snapshot()); if (undoStack.length > 100) undoStack.shift(); }
+function restore(snap){
+  const s = JSON.parse(snap);
+  components = s.components.map(c => ({ ...c }));
+  couplings = s.couplings.map(k => ({ a: byUid(k.aUid), b: byUid(k.bUid), M: k.M, k: k.k, useK: k.useK })).filter(k => k.a && k.b);
+  nodeIC = s.nodeIC || {};
+  const rawProbes = s.probes || (s.probe ? [s.probe] : []);     // back-compat with single-probe snapshots
+  probes = rawProbes.map(p => p.kind === 'I' ? { kind: 'I', comp: byUid(p.compUid) } : { kind: 'V', a: p.a, b: p.b })
+                    .filter(p => p.kind === 'V' ? (p.a && p.b) : !!p.comp);
+  counters = s.counters || {}; uidc = s.uidc || 1;
+  selComps = []; pending = null; selectedProbe = -1;
+}
+function doUndo(){ if (undoStack.length) { restore(undoStack.pop()); draw(); refreshList(); refreshExtra(); updateProbe(); } }
+$('#cUndo').onclick = doUndo;
+
+/* ---- tools ---- */
+function setTool(name){
+  tool = name; pending = null; selComps = []; selectedProbe = -1;
+  document.querySelectorAll('[data-tool]').forEach(x => x.classList.toggle('active', x.dataset.tool === name));
+  cv.style.cursor = name === 'select' ? 'grab' : 'crosshair';
+  $('#cHint').textContent = hintFor(name);
+  refreshExtra();                                  // reflect active probe/node-IC mode in the panel
+  draw();
+}
+document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+function hintFor(t){
+  const m = { select:'空白處拖曳=框選多個（Shift 加選）；拖本體=移動、拖綠端點=改尺寸/角度（Alt 任意角）、R=旋轉、F=探針反向、Ctrl+C/X/V=複製/剪下/貼上、Del=刪除、Esc=取消。', R:'點兩個格點放置電阻。', L:'點兩個格點放置電感。', C:'點兩個格點放置電容。', V:'點兩個格點放置電壓源（先點的端為 +）。', I:'點兩個格點放置電流源（電流由 + 端流出）。', D:'點兩個格點放置二極體（先點＝陽極 A）。', SW:'點兩個格點放置開關。', W:'點兩個格點放置導線。', GND:'點一個節點設為接地。', NIC:'點一個節點設定初始電壓（之後在面板輸入數值）。Esc 取消。', PV:'點兩個節點建立電壓探針 V(第一點)−V(第二點)。可連續加多個；Esc 結束。' };
+  return m[t] || '';
+}
+$('#cRotate').onclick = () => rotateSelection();
+function deleteSelection(){                            // delete the selected probe OR component(s)
+  if (selectedProbe >= 0) { pushUndo(); probes.splice(selectedProbe, 1); selectedProbe = -1; updateProbe(); draw(); return true; }
+  if (selComps.length) { pushUndo(); selComps.slice().forEach(c => removeComp(c)); selComps = []; draw(); refreshList(); refreshExtra(); return true; }
+  return false;
+}
+/* ---- copy / cut / paste of selected components ---- */
+function doCopy(){
+  if (!selComps.length) return;
+  const set = new Set(selComps);
+  const items = selComps.map(c => { const o = Object.assign({}, c); delete o._uid; delete o.id; o.a = { ...c.a }; if (c.b) o.b = { ...c.b }; else delete o.b; return o; });
+  const cps = couplings.filter(k => set.has(k.a) && set.has(k.b)).map(k => ({ ai: selComps.indexOf(k.a), bi: selComps.indexOf(k.b), k: k.k, M: k.M, useK: k.useK }));
+  clipboard = { items: items, couplings: cps }; pasteOff = 0;
+  $('#cHint').textContent = '已複製 ' + items.length + ' 個元件（Ctrl+V 貼上）。';
+}
+function doCut(){ if (!selComps.length) return; doCopy(); deleteSelection(); }
+function doPaste(){
+  if (!clipboard || !clipboard.items.length) return;
+  pushUndo(); pasteOff += 2; const off = pasteOff;
+  const made = clipboard.items.map(o => {
+    const c = Object.assign({}, o, { _uid: uidc++, id: nextId(o.type), a: { x: clampGX(o.a.x + off), y: clampGY(o.a.y + off) } });
+    if (o.b) c.b = { x: clampGX(o.b.x + off), y: clampGY(o.b.y + off) };
+    components.push(c); return c;
+  });
+  clipboard.couplings.forEach(cp => { const a = made[cp.ai], b = made[cp.bi]; if (a && b) couplings.push({ a: a, b: b, useK: cp.useK, k: cp.k, M: cp.M }); });
+  selComps = made; selectedProbe = -1;
+  draw(); refreshList(); refreshExtra();
+  $('#cHint').textContent = '已貼上 ' + made.length + ' 個元件（已選取，可拖曳移動）。';
+}
+$('#cDelSel').onclick = () => { if (!deleteSelection()) $('#cHint').textContent = '請先用「選取/移動」點選要刪除的元件或探針。'; };
+$('#cCopy2').onclick = () => { if (selComps.length) doCopy(); else $('#cHint').textContent = '請先框選或點選元件再複製。'; };
+$('#cCut').onclick = () => { if (selComps.length) doCut(); else $('#cHint').textContent = '請先框選或點選元件再剪下。'; };
+$('#cPaste').onclick = () => { if (clipboard && clipboard.items.length) doPaste(); else $('#cHint').textContent = '剪貼簿是空的，先複製元件。'; };
+cv.addEventListener('keydown', e => {
+  if (e.key === 'r' || e.key === 'R') rotateSelection();
+  if ((e.key === 'f' || e.key === 'F') && selectedProbe >= 0) flipProbe(selectedProbe);   // reverse probe direction
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelection();
+});
+document.addEventListener('keydown', e => {
+  if (!$('#view-circuit').classList.contains('active')) return;
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); doUndo(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C') && selComps.length) { e.preventDefault(); doCopy(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'x' || e.key === 'X') && selComps.length) { e.preventDefault(); doCut(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); doPaste(); }
+  if (e.key === 'Escape') { const b = document.querySelector('[data-tool="select"]'); if (b) b.click(); }   // Esc → 選取/移動
+});
+
+function rotate90(obj, ignore){     // rotate b 90° about a; ignore=comp to skip in overlap test (null=skip test, for probes)
+  const dx = obj.b.x - obj.a.x, dy = obj.b.y - obj.a.y;   // (dx,dy)->(-dy,dx)
+  const nb = { x: Math.max(0, Math.min(GW, obj.a.x - dy)), y: Math.max(0, Math.min(GH, obj.a.y + dx)) };
+  if (!ignore || !overlapsExisting({ a: obj.a, b: nb }, ignore)) obj.b = nb;
+}
+function rotateComp(c){ rotate90(c, c); }
+function rotateSelection(){          // rotate selected component(s) OR V-probe
+  if (selComps.length) { pushUndo(); selComps.forEach(c => { if (c.b) rotateComp(c); }); draw(); refreshList(); }
+  else if (selectedProbe >= 0 && probes[selectedProbe] && probes[selectedProbe].kind === 'V') { pushUndo(); rotate90(probes[selectedProbe], null); updateProbe(); draw(); }
+}
+
+/* ---- geometry / overlap ---- */
+function segDir(s){ return { x: Math.sign(s.b.x - s.a.x), y: Math.sign(s.b.y - s.a.y) }; }
+function pointsOf(s){ // grid points along an axis/diagonal segment between integer endpoints
+  const pts = []; const dx = s.b.x - s.a.x, dy = s.b.y - s.a.y; const n = Math.max(Math.abs(dx), Math.abs(dy));
+  if (n === 0) return [keyOf(s.a)];
+  const sx = dx / n, sy = dy / n;
+  if (!Number.isInteger(sx) || !Number.isInteger(sy)) return null; // not grid-collinear -> treat as no overlap basis
+  for (let i = 0; i <= n; i++) pts.push((s.a.x + sx * i) + ',' + (s.a.y + sy * i));
+  return pts;
+}
+function overlapsExisting(seg, ignore){
+  if (!seg.b) return false;
+  const A = pointsOf(seg); if (!A) return false;
+  const setA = new Set(A);
+  for (const c of components) {
+    if (c === ignore || !c.b || c.type === 'GND') continue;
+    const B = pointsOf(c); if (!B) continue;
+    let shared = 0; for (const p of B) if (setA.has(p)) shared++;
+    if (shared >= 2) return true;   // share a sub-segment (≥2 collinear grid points)
+  }
+  return false;
+}
+
+/* ---- mouse ---- */
+function mpos(ev){ const r = cv.getBoundingClientRect(); return { mx: ev.clientX - r.left, my: ev.clientY - r.top }; }
+cv.addEventListener('mousedown', ev => {
+  try { cv.focus({ preventScroll: true }); } catch (e) { cv.focus(); }   // don't scroll canvas into view (would shift the click target)
+  const { mx, my } = mpos(ev);
+  if (tool === 'select') {
+    const pi = probeAt(mx, my);
+    const sole = soleSel();
+    // (1) sole-selected component: grab its endpoint handle → resize / rotate (priority)
+    if (sole && sole.b) {
+      const ep = endpointHandleAt(mx, my, sole);
+      if (ep) { drag = { kind: 'comp', comp: sole, mode: 'endpoint', end: ep, moved: false, snap: snapshot() }; return; }
+    }
+    // (2) selected V-probe: drag an endpoint to re-point, or the body to move
+    if (selectedProbe >= 0 && probes[selectedProbe] && probes[selectedProbe].kind === 'V') {
+      const p = probes[selectedProbe];
+      const pe = endpointHandleAt(mx, my, p);
+      if (pe) { drag = { kind: 'probe', probe: selectedProbe, mode: 'endpoint', end: pe, moved: false, snap: snapshot() }; return; }
+      if (distToSeg(mx, my, gx2px(p.a.x), gx2px(p.a.y), gx2px(p.b.x), gx2px(p.b.y)) < 8) { drag = { kind: 'probe', probe: selectedProbe, mode: 'move', startGX: px2g(mx), startGY: px2g(my), origA: { ...p.a }, origB: { ...p.b }, moved: false, snap: snapshot() }; return; }
+    }
+    // (3) select a probe under the cursor
+    if (pi >= 0) { selectedProbe = pi; selComps = []; updateProbe(); draw(); refreshList(); return; }
+    selectedProbe = -1;
+    // (4) component under cursor → select (shift = toggle) + start move-drag of all selected
+    const c = compAt(mx, my);
+    if (c) {
+      if (ev.shiftKey) { const k = selComps.indexOf(c); if (k >= 0) selComps.splice(k, 1); else selComps.push(c); }
+      else if (!selComps.includes(c)) selComps = [c];
+      drag = { kind: 'comp', mode: 'move', startGX: px2g(mx), startGY: px2g(my), items: selComps.map(x => ({ c: x, a: { ...x.a }, b: x.b ? { ...x.b } : null })), pnodes: probeFollowNodes(selComps), moved: false, snap: snapshot() };
+      draw(); refreshList(); return;
+    }
+    // (5) empty space → rubber-band marquee selection (shift = add to selection)
+    if (!ev.shiftKey) selComps = [];
+    drag = { kind: 'marquee', x0: mx, y0: my, x1: mx, y1: my, add: ev.shiftKey, base: selComps.slice(), moved: false };
+    draw(); refreshList();
+  }
+});
+cv.addEventListener('mousemove', ev => {
+  const { mx, my } = mpos(ev);
+  if (drag) {
+    if (drag.kind === 'marquee') { drag.x1 = mx; drag.y1 = my; drag.moved = true; draw(); return; }
+    if (drag.kind === 'comp' && drag.mode === 'endpoint') {
+      // move the grabbed endpoint → resize + rotate. Snap to grid (keeps nodes
+      // connected); hold Alt for a free arbitrary angle/length.
+      const obj = drag.comp;
+      let nx, ny;
+      if (ev.altKey) { nx = clampGX((mx - OX) / STEP); ny = clampGY((my - OX) / STEP); nx = Math.round(nx * 100) / 100; ny = Math.round(ny * 100) / 100; }
+      else { nx = clampGX(px2g(mx)); ny = clampGY(px2g(my)); }
+      const other = drag.end === 'a' ? obj.b : obj.a;
+      if (nx === other.x && ny === other.y) return;
+      obj[drag.end] = { x: nx, y: ny }; drag.moved = true;
+      const L = Math.hypot(obj.b.x - obj.a.x, obj.b.y - obj.a.y);
+      const ang = Math.atan2(-(obj.b.y - obj.a.y), obj.b.x - obj.a.x) * 180 / Math.PI;
+      $('#cHint').textContent = '長度 ' + L.toFixed(2) + ' 格、角度 ' + ang.toFixed(0) + '°' + (ev.altKey ? '（自由角度）' : '（吸附格點，按住 Alt 可任意角度）');
+      draw(); return;
+    }
+    if (drag.kind === 'probe') {                          // probe endpoint / move
+      const p = probes[drag.probe]; if (!p) return;
+      if (drag.mode === 'endpoint') {
+        const nx = clampGX(px2g(mx)), ny = clampGY(px2g(my));
+        const other = drag.end === 'a' ? p.b : p.a;
+        if (nx === other.x && ny === other.y) return;
+        p[drag.end] = { x: nx, y: ny }; drag.moved = true; draw(); return;
+      }
+      const dgx = px2g(mx) - drag.startGX, dgy = px2g(my) - drag.startGY;
+      if (dgx === 0 && dgy === 0 && !drag.moved) return;
+      p.a = { x: clampGX(drag.origA.x + dgx), y: clampGY(drag.origA.y + dgy) };
+      p.b = { x: clampGX(drag.origB.x + dgx), y: clampGY(drag.origB.y + dgy) };
+      drag.moved = true; draw(); return;
+    }
+    // move all selected components (drag.items) + any attached probe nodes
+    const dgx = px2g(mx) - drag.startGX, dgy = px2g(my) - drag.startGY;
+    if (dgx === 0 && dgy === 0 && !drag.moved) return;
+    drag.items.forEach(it => { it.c.a = { x: clampGX(it.a.x + dgx), y: clampGY(it.a.y + dgy) }; if (it.b) it.c.b = { x: clampGX(it.b.x + dgx), y: clampGY(it.b.y + dgy) }; });
+    drag.pnodes.forEach(pn => { pn.p[pn.e] = { x: clampGX(pn.orig.x + dgx), y: clampGY(pn.orig.y + dgy) }; });
+    drag.moved = true; draw();
+    return;
+  }
+  // track the grid point under the cursor → live preview + hover highlight
+  const gx = px2g(mx), gy = px2g(my);
+  const nh = (gx >= 0 && gx <= GW && gy >= 0 && gy <= GH) ? { x: gx, y: gy } : null;
+  const changed = (!!nh !== !!hover) || (nh && hover && (nh.x !== hover.x || nh.y !== hover.y));
+  if (changed) { hover = nh; draw(); }
+  // endpoint-handle hover cursor on the sole-selected component / V-probe
+  if (tool === 'select') {
+    const sole = soleSel();
+    const onHandle = (sole && sole.b && endpointHandleAt(mx, my, sole)) ||
+                     (selectedProbe >= 0 && probes[selectedProbe] && probes[selectedProbe].kind === 'V' && endpointHandleAt(mx, my, probes[selectedProbe]));
+    cv.style.cursor = onHandle ? 'pointer' : 'grab';
+  }
+});
+cv.addEventListener('mouseleave', () => { if (hover) { hover = null; draw(); } });
+cv.addEventListener('mouseup', () => {
+  if (drag) {
+    if (drag.kind === 'marquee' && drag.moved) {
+      const x0 = Math.min(drag.x0, drag.x1), x1 = Math.max(drag.x0, drag.x1), y0 = Math.min(drag.y0, drag.y1), y1 = Math.max(drag.y0, drag.y1);
+      const inR = p => { const x = gx2px(p.x), y = gx2px(p.y); return x >= x0 && x <= x1 && y >= y0 && y <= y1; };
+      const hit = components.filter(c => c.b ? (inR(c.a) && inR(c.b)) : inR(c.a));   // fully-enclosed
+      selComps = drag.add ? drag.base.concat(hit.filter(c => !drag.base.includes(c))) : hit;
+      drag = null; draw(); refreshList(); return;
+    }
+    if (drag.moved && drag.kind !== 'marquee') {
+      const bad = (drag.mode === 'endpoint' && overlapsExisting(drag.comp, drag.comp)) ||
+                  (drag.items && drag.items.some(it => it.c.b && overlapsExisting(it.c, it.c)));
+      if (drag.kind === 'comp' && bad) { restore(drag.snap); selComps = []; refreshList(); refreshExtra(); updateProbe(); }
+      else { undoStack.push(drag.snap); if (undoStack.length > 100) undoStack.shift(); if (drag.kind === 'probe' || (drag.pnodes && drag.pnodes.length)) updateProbe(); }
+      draw();
+    }
+  }
+  drag = null;
+});
+function clampGX(v){ return Math.max(0, Math.min(GW, v)); }
+function clampGY(v){ return Math.max(0, Math.min(GH, v)); }
+
+cv.addEventListener('click', ev => {
+  if (drag && drag.moved) { drag = null; return; }
+  const { mx, my } = mpos(ev); const gx = px2g(mx), gy = px2g(my);
+  if (gx < 0 || gx > GW || gy < 0 || gy > GH) return;
+  if (tool === 'select') return;                     // probes/node-IC/mutual are panel-driven now
+  if (tool === 'GND') { pushUndo(); components.push({ _uid: uidc++, id: nextId('GND'), type: 'GND', a: { x: gx, y: gy } }); draw(); return; }
+  if (tool === 'NIC') {                              // pick a node; value is then edited in the panel (no popup)
+    pushUndo(); const key = gx + ',' + gy; if (!(key in nodeIC)) nodeIC[key] = 0;
+    setTool('select'); refreshExtra(); draw();
+    return;
+  }
+  // two-point placement / PV
+  if (!pending) { pending = { x: gx, y: gy }; draw(); }
+  else {
+    if (pending.x === gx && pending.y === gy) { pending = null; draw(); return; }
+    if (tool === 'PV') { pushUndo(); probes.push({ kind: 'V', a: { ...pending }, b: { x: gx, y: gy } }); updateProbe(); }
+    else {
+      const seg = { a: { ...pending }, b: { x: gx, y: gy } };
+      if (overlapsExisting(seg, null)) { $('#cHint').textContent = '⚠ 與既有元件重疊，無法放置。'; pending = null; draw(); return; }
+      pushUndo(); placeComp(tool, seg.a, seg.b);
+    }
+    pending = null; draw(); refreshList();
+  }
+});
+
+function placeComp(type, a, b){
+  const c = { _uid: uidc++, id: nextId(type), type, a: { ...a }, b: { ...b } };
+  if (type === 'R') c.value = 1;
+  else if (type === 'L') { c.value = 1; c.i0 = 0; }
+  else if (type === 'C') { c.value = 1; c.v0 = 0; }
+  else if (type === 'V') { c.wave = 'step'; c.amp = 1; c.freq = 2; c.Ts = 2; c.duty = 0.5; }
+  else if (type === 'I') { c.wave = 'step'; c.amp = 1; c.freq = 2; c.Ts = 2; c.duty = 0.5; }
+  else if (type === 'D') { c.init = 'off'; c.Vf = 0; }
+  else if (type === 'SW') { c.state = 'open'; c.tSwitch = 0; c.mode = 'once'; c.Tsw = 1e-6; c.duty = 0.5; c.Ron = 0; c.inv = false; }
+  components.push(c);
+}
+function removeComp(c){
+  components = components.filter(x => x !== c);
+  couplings = couplings.filter(k => k.a !== c && k.b !== c);
+  // drop any probe that referenced the deleted element / its nodes
+  probes = probes.filter(p => {
+    if (p.kind === 'I') return p.comp !== c;
+    const touches = sameNode(p.a, c.a) || sameNode(p.b, c.a) || (c.b && (sameNode(p.a, c.b) || sameNode(p.b, c.b)));
+    return !touches;
+  });
+  selectedProbe = -1;
+  updateProbe();
+}
+function toggleProbeI(c){
+  const i = probes.findIndex(p => p.kind === 'I' && p.comp === c);
+  if (i >= 0) probes.splice(i, 1); else probes.push({ kind: 'I', comp: c, dir: 1 });
+}
+function probeLabel(p){
+  if (p.kind === 'V') return 'V(' + p.a.x + ',' + p.a.y + ')−V(' + p.b.x + ',' + p.b.y + ')';
+  return 'I(' + (p.comp ? p.comp.type + p.comp.id : '?') + ')' + (p.dir === -1 ? '↩反向' : '');
+}
+function flipProbe(i){                  // reverse a probe's reference direction
+  const p = probes[i]; if (!p) return; pushUndo();
+  if (p.kind === 'V') { const t = p.a; p.a = p.b; p.b = t; }   // swap + / −
+  else p.dir = (p.dir === -1 ? 1 : -1);                         // reverse current arrow
+  updateProbe(); draw();
+}
+function sameNode(p, q){ return p && q && p.x === q.x && p.y === q.y; }
+function addCoupling(a, b){
+  if (couplings.some(k => (k.a === a && k.b === b) || (k.a === b && k.b === a))) return;
+  const k = 0.5; couplings.push({ a, b, useK: true, k: k, M: k * Math.sqrt(a.value * b.value) });
+}
+function compAt(mx, my){
+  let best = null, bd = 15;
+  for (const c of components) {
+    if (c.type === 'GND') { const cx = gx2px(c.a.x), cy = gx2px(c.a.y); const d = distToSeg(mx, my, cx, cy, cx, cy + 16); if (d < bd) { bd = d; best = c; } continue; }   // whole ground symbol clickable
+    if (!c.b) continue;
+    const d = distToSeg(mx, my, gx2px(c.a.x), gx2px(c.a.y), gx2px(c.b.x), gx2px(c.b.y));
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best;
+}
+function distToSeg(px, py, x1, y1, x2, y2){ const dx = x2 - x1, dy = y2 - y1, L2 = dx*dx+dy*dy; let t = L2 ? ((px-x1)*dx+(py-y1)*dy)/L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px-(x1+t*dx), py-(y1+t*dy)); }
+function updateProbe(){
+  $('#cProbe').innerHTML = probes.length
+    ? '探針(' + probes.length + ')：' + probes.map((p, i) => '<span style="color:' + COLORS[i % COLORS.length] + '">' + probeLabel(p) + '</span>').join('、')
+    : '探針：未設定（用右側「量測與設定」面板新增）';
+  refreshExtra();
+}
+
+/* ---- drawing ---- */
+function draw(){
+  cctx.clearRect(0, 0, cv.width, cv.height);
+  cctx.fillStyle = '#283040';
+  for (let i = 0; i <= GW; i++) for (let j = 0; j <= GH; j++) { cctx.beginPath(); cctx.arc(gx2px(i), gx2px(j), 1.5, 0, 7); cctx.fill(); }
+  // hover highlight on the grid point under the cursor (placement tools)
+  if (hover && tool !== 'select') { cctx.strokeStyle = 'rgba(124,182,255,.7)'; cctx.lineWidth = 1.5; cctx.beginPath(); cctx.arc(gx2px(hover.x), gx2px(hover.y), 7, 0, 7); cctx.stroke(); }
+  for (const k of couplings) drawCoupling(k);
+  for (const c of components) drawComp(c, selComps.includes(c));
+  const sole = soleSel();
+  if (sole && sole.b && tool === 'select') {               // resize/rotate handles on the single selected component
+    [sole.a, sole.b].forEach(p => { const x = gx2px(p.x), y = gx2px(p.y); cctx.fillStyle = '#58d6a0'; cctx.strokeStyle = '#0b0e14'; cctx.lineWidth = 1.5; cctx.fillRect(x - 4, y - 4, 8, 8); cctx.strokeRect(x - 4, y - 4, 8, 8); });
+  }
+  for (const key in nodeIC) { const [x, y] = key.split(',').map(Number); drawNIC(gx2px(x), gx2px(y), nodeIC[key]); }
+  if (pending && pending.x !== undefined) { cctx.fillStyle = '#58d6a0'; cctx.beginPath(); cctx.arc(gx2px(pending.x), gx2px(pending.y), 5, 0, 7); cctx.fill(); }
+  if (pending && pending.type === 'L') { const c = pending; cctx.strokeStyle = '#58d6a0'; cctx.lineWidth = 2; cctx.beginPath(); cctx.arc((gx2px(c.a.x)+gx2px(c.b.x))/2, (gx2px(c.a.y)+gx2px(c.b.y))/2, 16, 0, 7); cctx.stroke(); }
+  // live placement preview: first point already chosen → dashed line to the cursor
+  if (pending && pending.x !== undefined && hover && !(hover.x === pending.x && hover.y === pending.y) && tool !== 'M') {
+    const isPV = tool === 'PV', col = isPV ? '#ffb454' : '#58d6a0';
+    const x1 = gx2px(pending.x), y1 = gx2px(pending.y), x2 = gx2px(hover.x), y2 = gx2px(hover.y);
+    cctx.save(); cctx.strokeStyle = col; cctx.lineWidth = 2; cctx.setLineDash([6, 4]);
+    cctx.beginPath(); cctx.moveTo(x1, y1); cctx.lineTo(x2, y2); cctx.stroke(); cctx.restore();
+    cctx.fillStyle = col; cctx.beginPath(); cctx.arc(x2, y2, 4, 0, 7); cctx.fill();
+    const nm = { R:'電阻', L:'電感', C:'電容', V:'電壓源', I:'電流源', D:'二極體', SW:'開關', W:'導線', PV:'電壓探針' };
+    cctx.font = '11px Consolas'; cctx.textAlign = 'center'; cctx.fillText(nm[tool] || tool, (x1 + x2) / 2, (y1 + y2) / 2 - 6);
+  }
+  probes.forEach((p, i) => {
+    const col = COLORS[i % COLORS.length], selp = i === selectedProbe;
+    const ring = (x, y, r) => { cctx.save(); cctx.strokeStyle = '#58d6a0'; cctx.lineWidth = 2; cctx.setLineDash([4, 3]); cctx.beginPath(); cctx.arc(x, y, r, 0, 7); cctx.stroke(); cctx.restore(); };
+    if (p.kind === 'V') {
+      if (selp && tool === 'select') {                    // connecting line = grab to move the whole probe
+        cctx.save(); cctx.strokeStyle = 'rgba(88,214,160,.55)'; cctx.lineWidth = 1.5; cctx.setLineDash([5, 4]);
+        cctx.beginPath(); cctx.moveTo(gx2px(p.a.x), gx2px(p.a.y)); cctx.lineTo(gx2px(p.b.x), gx2px(p.b.y)); cctx.stroke(); cctx.restore();
+      }
+      mark(p.a, col, '+' + (i + 1)); mark(p.b, col, '−' + (i + 1));
+      if (selp && tool === 'select') [p.a, p.b].forEach(q => { const x = gx2px(q.x), y = gx2px(q.y); cctx.fillStyle = '#58d6a0'; cctx.strokeStyle = '#0b0e14'; cctx.lineWidth = 1.5; cctx.fillRect(x - 4, y - 4, 8, 8); cctx.strokeRect(x - 4, y - 4, 8, 8); });
+      else if (selp) { ring(gx2px(p.a.x), gx2px(p.a.y), 11); ring(gx2px(p.b.x), gx2px(p.b.y), 11); }
+    } else if (p.comp && p.comp.b) {
+      const c = p.comp, cx = (gx2px(c.a.x)+gx2px(c.b.x))/2, cy = (gx2px(c.a.y)+gx2px(c.b.y))/2;
+      if (selp) ring(cx, cy, 21);
+      cctx.strokeStyle = col; cctx.lineWidth = 2; cctx.beginPath(); cctx.arc(cx, cy, 17, 0, 7); cctx.stroke();
+      // reference-direction arrow along the component (a→b, reversed if dir=−1)
+      const dir = p.dir === -1 ? -1 : 1, ax = gx2px(c.a.x), ay = gx2px(c.a.y), bx = gx2px(c.b.x), by = gx2px(c.b.y);
+      let ux = bx - ax, uy = by - ay; const L = Math.hypot(ux, uy) || 1; ux = ux / L * dir; uy = uy / L * dir;
+      const tipX = cx + ux * 13, tipY = cy + uy * 13, baseX = cx - ux * 13, baseY = cy - uy * 13, nx = -uy, ny = ux;
+      cctx.fillStyle = col; cctx.strokeStyle = col; cctx.lineWidth = 2;
+      cctx.beginPath(); cctx.moveTo(baseX, baseY); cctx.lineTo(tipX, tipY); cctx.stroke();
+      cctx.beginPath(); cctx.moveTo(tipX, tipY); cctx.lineTo(tipX - ux*6 + nx*4, tipY - uy*6 + ny*4); cctx.lineTo(tipX - ux*6 - nx*4, tipY - uy*6 - ny*4); cctx.closePath(); cctx.fill();
+      cctx.font = 'bold 11px Consolas'; cctx.textAlign = 'center'; cctx.fillText('I' + (i + 1), cx + nx*22, cy + ny*22);
+    }
+  });
+  // rubber-band marquee rectangle
+  if (drag && drag.kind === 'marquee') {
+    const x = Math.min(drag.x0, drag.x1), y = Math.min(drag.y0, drag.y1), w = Math.abs(drag.x1 - drag.x0), h = Math.abs(drag.y1 - drag.y0);
+    cctx.save(); cctx.fillStyle = 'rgba(76,154,255,.12)'; cctx.strokeStyle = '#4c9aff'; cctx.lineWidth = 1; cctx.setLineDash([4, 3]);
+    cctx.fillRect(x, y, w, h); cctx.strokeRect(x, y, w, h); cctx.restore();
+  }
+}
+function mark(p, col, txt){ cctx.fillStyle = col; cctx.beginPath(); cctx.arc(gx2px(p.x), gx2px(p.y), 5, 0, 7); cctx.fill(); cctx.fillStyle = '#fff'; cctx.font = 'bold 12px Consolas'; cctx.textAlign = 'center'; cctx.fillText(txt, gx2px(p.x), gx2px(p.y) - 9); }
+function drawNIC(x, y, v){ cctx.fillStyle = '#c792ea'; cctx.beginPath(); cctx.arc(x, y, 4, 0, 7); cctx.fill(); cctx.font = '11px Consolas'; cctx.textAlign = 'left'; cctx.fillText(E.fmtNum(v) + 'V', x + 7, y - 7); }
+function drawCoupling(k){
+  const ma = { x: (gx2px(k.a.a.x)+gx2px(k.a.b.x))/2, y: (gx2px(k.a.a.y)+gx2px(k.a.b.y))/2 };
+  const mb = { x: (gx2px(k.b.a.x)+gx2px(k.b.b.x))/2, y: (gx2px(k.b.a.y)+gx2px(k.b.b.y))/2 };
+  cctx.strokeStyle = '#c792ea'; cctx.lineWidth = 1.5; cctx.setLineDash([4, 3]);
+  cctx.beginPath(); cctx.moveTo(ma.x, ma.y); cctx.lineTo(mb.x, mb.y); cctx.stroke(); cctx.setLineDash([]);
+  cctx.fillStyle = '#c792ea'; cctx.font = '12px Consolas'; cctx.textAlign = 'center';
+  cctx.fillText('M', (ma.x+mb.x)/2, (ma.y+mb.y)/2 - 4);
+}
+function drawComp(c, sel){
+  if (c.type === 'GND') { drawGnd(gx2px(c.a.x), gx2px(c.a.y), sel); return; }
+  const x1 = gx2px(c.a.x), y1 = gx2px(c.a.y), x2 = gx2px(c.b.x), y2 = gx2px(c.b.y);
+  const ang = Math.atan2(y2-y1, x2-x1), L = Math.hypot(x2-x1, y2-y1);
+  cctx.save(); cctx.translate(x1, y1); cctx.rotate(ang);
+  cctx.strokeStyle = sel ? '#58d6a0' : '#cdd6e0'; cctx.fillStyle = cctx.strokeStyle; cctx.lineWidth = sel ? 2.6 : 2;
+  const w = 30, cxm = L/2, lead = cxm - w/2;
+  const leads = () => { line(0,0,lead,0); line(cxm+w/2,0,L,0); };
+  if (c.type === 'W') line(0,0,L,0);
+  else if (c.type === 'R') { leads(); cctx.strokeRect(cxm-w/2,-7,w,14); }
+  else if (c.type === 'L') { leads(); cctx.beginPath(); for (let k=0;k<4;k++) cctx.arc(cxm-w/2+w/8+k*w/4,0,w/8,Math.PI,0,false); cctx.stroke(); }
+  else if (c.type === 'C') { line(0,0,cxm-4,0); line(cxm+4,0,L,0); line(cxm-4,-10,cxm-4,10); line(cxm+4,-10,cxm+4,10); }
+  else if (c.type === 'V' || c.type === 'I') {
+    line(0,0,cxm-12,0); line(cxm+12,0,L,0); cctx.beginPath(); cctx.arc(cxm,0,12,0,7); cctx.stroke();
+    if (c.type === 'V') { cctx.font='bold 13px Consolas'; cctx.textAlign='center'; cctx.fillText('+',cxm-5,-3); cctx.fillText('−',cxm+5,4); }
+    else { cctx.beginPath(); cctx.moveTo(cxm-6,0); cctx.lineTo(cxm+6,0); cctx.lineTo(cxm+2,-4); cctx.moveTo(cxm+6,0); cctx.lineTo(cxm+2,4); cctx.stroke(); }
+  }
+  else if (c.type === 'D') { // anode(a)->cathode(b): triangle pointing to b, then bar
+    line(0,0,cxm-8,0); line(cxm+8,0,L,0);
+    cctx.beginPath(); cctx.moveTo(cxm-8,-7); cctx.lineTo(cxm-8,7); cctx.lineTo(cxm+8,0); cctx.closePath(); cctx.stroke();
+    line(cxm+8,-8,cxm+8,8);
+  }
+  else if (c.type === 'SW') {
+    line(0,0,cxm-10,0); line(cxm+10,0,L,0);
+    cctx.beginPath(); cctx.arc(cxm-10,0,2,0,7); cctx.arc(cxm+10,0,2,0,7); cctx.stroke();
+    const closed = (c.state||'open') === 'closed';
+    cctx.beginPath(); cctx.moveTo(cxm-10,0); if (closed) cctx.lineTo(cxm+10,0); else cctx.lineTo(cxm+8,-9); cctx.stroke();
+  }
+  cctx.restore();
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  cctx.fillStyle = sel ? '#58d6a0' : '#7fb6ff'; cctx.font = '12px Consolas'; cctx.textAlign = 'center';
+  if (c.type !== 'W') cctx.fillText(label(c), mx, my - 14);
+}
+function label(c){
+  const tag = c.type + c.id;
+  if (c.type === 'R') return tag + '=' + c.value;
+  if (c.type === 'L') return tag + '=' + c.value + (c.i0 ? ' i₀=' + c.i0 : '');
+  if (c.type === 'C') return tag + '=' + c.value + (c.v0 ? ' v₀=' + c.v0 : '');
+  if (c.type === 'V' || c.type === 'I') return tag + ' ' + waveLabel(c);
+  if (c.type === 'D') return tag + (c.Vf ? ' Vf=' + c.Vf : '');
+  if (c.type === 'SW') return tag + (c.mode === 'pwm' ? ' PWM T=' + c.Tsw + ' d=' + c.duty + (c.inv ? ' 互補' : '') : (c.tSwitch > 0 ? ' @' + c.tSwitch + 's(' + (c.state === 'closed' ? '閉' : '開') + ')' : '(' + (c.state === 'closed' ? '閉' : '開') + ')')) + (c.Ron ? ' Rₒₙ=' + c.Ron : '');
+  return tag;
+}
+function waveLabel(c){ const m = { step:'階躍', impulse:'脈衝', ramp:'斜坡', sin:'sin', cos:'cos', exp:'指數', pulse:'脈波' }; return (m[c.wave]||c.wave) + '·' + (c.amp !== undefined ? c.amp : 1); }
+function line(a,b,cc,d){ cctx.beginPath(); cctx.moveTo(a,b); cctx.lineTo(cc,d); cctx.stroke(); }
+function drawGnd(x,y,sel){
+  cctx.strokeStyle = sel ? '#9be7c4' : '#58d6a0'; cctx.lineWidth = sel ? 2.6 : 2;
+  cctx.beginPath(); cctx.moveTo(x,y); cctx.lineTo(x,y+8); cctx.stroke();
+  for (let k=0;k<3;k++){ const w=14-k*4; cctx.beginPath(); cctx.moveTo(x-w/2,y+8+k*4); cctx.lineTo(x+w/2,y+8+k*4); cctx.stroke(); }
+  if (sel){ cctx.fillStyle = '#58d6a0'; cctx.strokeStyle = '#0b0e14'; cctx.lineWidth = 1.5; cctx.fillRect(x-4,y-4,8,8); cctx.strokeRect(x-4,y-4,8,8); }   // selection marker at the node
+}
+
+/* ---- properties panel ---- */
+function refreshList(){
+  const el = $('#cList');
+  const ed = components.filter(c => c.type !== 'GND' && c.type !== 'W');
+  if (!ed.length) { el.innerHTML = '<span class="muted small">尚無可調元件</span>'; return; }
+  el.innerHTML = '';
+  ed.forEach(c => {
+    const row = document.createElement('div'); row.className = 'comp-row';
+    let h = '<span class="tag">' + c.type + c.id + '</span>';
+    if (c.type === 'R' || c.type === 'L' || c.type === 'C') {
+      const unit = c.type === 'R' ? 'Ω' : c.type === 'L' ? 'H' : 'F';
+      h += '<label>值</label><input class="w" type="number" step="any" value="' + c.value + '" data-u="' + c._uid + '" data-f="value"><span class="muted small">' + unit + '</span>';
+      if (c.type === 'L') h += '<label>i₀</label><input class="w" type="number" step="any" value="' + (c.i0||0) + '" data-u="' + c._uid + '" data-f="i0"><span class="muted small">A</span>';
+      if (c.type === 'C') h += '<label>v₀</label><input class="w" type="number" step="any" value="' + (c.v0||0) + '" data-u="' + c._uid + '" data-f="v0"><span class="muted small">V</span>';
+    } else if (c.type === 'V' || c.type === 'I') {
+      h += '<label>波形</label><select data-u="' + c._uid + '" data-f="wave">' + ['step:階躍','impulse:脈衝','ramp:斜坡','sin:正弦','cos:餘弦','exp:指數','pulse:脈波'].map(o => { const [v,n]=o.split(':'); return '<option value="'+v+'"'+(c.wave===v?' selected':'')+'>'+n+'</option>'; }).join('') + '</select>';
+      h += '<label>振幅</label><input class="w" type="number" step="any" value="' + (c.amp!==undefined?c.amp:1) + '" data-u="' + c._uid + '" data-f="amp">';
+      if (c.wave === 'sin' || c.wave === 'cos') h += '<label>ω</label><input class="w" type="number" step="any" value="' + (c.freq||2) + '" data-u="' + c._uid + '" data-f="freq">';
+      if (c.wave === 'exp') h += '<label>a</label><input class="w" type="number" step="any" value="' + (c.freq||1) + '" data-u="' + c._uid + '" data-f="freq">';
+      if (c.wave === 'pulse') h += '<label>Ts</label><input class="w" type="number" step="any" value="' + (c.Ts||2) + '" data-u="' + c._uid + '" data-f="Ts"><label>duty</label><input class="w" type="number" step="0.05" min="0" max="1" value="' + (c.duty!==undefined?c.duty:0.5) + '" data-u="' + c._uid + '" data-f="duty">';
+    } else if (c.type === 'SW') {
+      h += '<label>模式</label><select data-u="' + c._uid + '" data-f="mode"><option value="once"' + (c.mode!=='pwm'?' selected':'') + '>單次</option><option value="pwm"' + (c.mode==='pwm'?' selected':'') + '>PWM週期</option></select>';
+      if (c.mode === 'pwm') {
+        h += '<label>T</label><input class="w" type="number" step="any" value="' + (c.Tsw||1e-6) + '" data-u="' + c._uid + '" data-f="Tsw"><span class="muted small">s</span><label>duty</label><input class="w" type="number" step="0.05" min="0" max="1" value="' + (c.duty!==undefined?c.duty:0.5) + '" data-u="' + c._uid + '" data-f="duty">';
+        h += '<label title="互補：閉合相位反相，做同步整流的下臂開關">互補</label><input type="checkbox" data-u="' + c._uid + '" data-f="inv"' + (c.inv?' checked':'') + '>';
+      } else {
+        h += '<label>初始</label><select data-u="' + c._uid + '" data-f="state"><option value="open"' + (c.state!=='closed'?' selected':'') + '>開</option><option value="closed"' + (c.state==='closed'?' selected':'') + '>閉</option></select>';
+        h += '<label>切換t<sub>s</sub></label><input class="w" type="number" step="any" min="0" value="' + (c.tSwitch||0) + '" data-u="' + c._uid + '" data-f="tSwitch"><span class="muted small">s(0=不切)</span>';
+      }
+      h += '<label title="導通電阻 Rds(on)，0=理想開關">Rₒₙ</label><input class="w" type="number" step="any" min="0" value="' + (c.Ron||0) + '" data-u="' + c._uid + '" data-f="Ron"><span class="muted small">Ω</span>';
+    } else if (c.type === 'D') {
+      h += '<span class="muted small">A→K (' + c.a.x + ',' + c.a.y + ')→(' + c.b.x + ',' + c.b.y + ')</span>';
+      h += '<label title="順向壓降 Vf，0=理想二極體">V<sub>f</sub></label><input class="w" type="number" step="any" min="0" value="' + (c.Vf||0) + '" data-u="' + c._uid + '" data-f="Vf"><span class="muted small">V</span>';
+    }
+    row.innerHTML = h; el.appendChild(row);
+  });
+  el.querySelectorAll('input,select').forEach(inp => inp.onchange = () => {
+    const c = byUid(parseInt(inp.dataset.u)); if (!c) return;
+    pushUndo(); const f = inp.dataset.f;
+    c[f] = (f === 'inv') ? inp.checked : ((f === 'wave' || f === 'state' || f === 'mode') ? inp.value : parseFloat(inp.value));
+    // keep coupling M/k consistent if inductor value changed
+    if (f === 'value') couplings.forEach(k => { if (k.a === c || k.b === c) { if (k.useK) k.M = k.k * Math.sqrt(k.a.value * k.b.value); else k.k = k.M / Math.sqrt(k.a.value * k.b.value); } });
+    refreshList(); refreshExtra(); draw();
+  });
+}
+function circuitNodes(){            // distinct connection points (component endpoints), sorted
+  const set = new Set();
+  components.forEach(c => { if (c.a) set.add(c.a.x + ',' + c.a.y); if (c.b) set.add(c.b.x + ',' + c.b.y); });
+  return [...set].sort((a, b) => { const p = a.split(',').map(Number), q = b.split(',').map(Number); return p[0] - q[0] || p[1] - q[1]; });
+}
+function nodeOptions(nodes, sel){ return nodes.map(n => '<option value="' + n + '"' + (sel === n ? ' selected' : '') + '>(' + n + ')</option>').join(''); }
+function refreshExtra(){
+  const el = $('#cExtra'); let h = '';
+  const inds = components.filter(c => c.type === 'L');
+  const measurable = components.filter(c => c.b && c.type !== 'W' && c.type !== 'GND');
+  const nodes = circuitNodes();
+  const sec = (t) => '<div style="margin:10px 0 6px;font-weight:600;color:var(--accent2)">' + t + '</div>';
+
+  // ---- 輸出探針 ----
+  h += sec('輸出探針 <span class="muted small" style="font-weight:400">（可多個，疊圖比較）</span>');
+  // electric current probe: pick a component from a select box
+  h += '<div class="row" style="gap:6px">' +
+       '<select class="w" id="addPI" style="width:auto"><option value="">＋ 電流探針：選元件…</option>' +
+       measurable.map(c => '<option value="' + c._uid + '">' + c.type + c.id + '</option>').join('') + '</select></div>';
+  // voltage probe: pick two nodes from select boxes, or click them on the canvas
+  if (nodes.length >= 2) {
+    h += '<div class="row" style="gap:4px;margin-top:5px"><span class="muted small">電壓探針</span>' +
+         '<select class="w" id="pvA" style="width:auto">' + nodeOptions(nodes, nodes[0]) + '</select><span class="muted">−</span>' +
+         '<select class="w" id="pvB" style="width:auto">' + nodeOptions(nodes, nodes[1]) + '</select>' +
+         '<button class="ghost small" id="pvAdd">加入</button>' +
+         '<button class="ghost small" id="addPV"' + (tool === 'PV' ? ' style="border-color:var(--accent);color:var(--accent)"' : '') + ' title="改用滑鼠在畫布點兩個節點">畫布點選</button></div>';
+  } else {
+    h += '<div class="row" style="margin-top:5px"><button class="ghost small" id="addPV"' + (tool === 'PV' ? ' style="border-color:var(--accent);color:var(--accent)"' : '') + '>＋ 電壓探針（點兩節點）</button></div>';
+  }
+  if (probes.length) {
+    h += '<div style="margin-top:6px">' + probes.map((p, i) =>
+      '<div class="comp-row"' + (i === selectedProbe ? ' style="background:rgba(88,214,160,.12);border-radius:6px"' : '') + '><span style="color:' + COLORS[i % COLORS.length] + ';font-weight:700">●</span><span class="small">' + probeLabel(p) + (i === selectedProbe ? ' ◀' : '') + '</span><button class="ghost small" data-pflip="' + i + '" title="反向（' + (p.kind === 'V' ? '交換 +/−' : '反轉電流方向') + '）">⇄</button><button class="ghost small" data-pdel="' + i + '">✕</button></div>').join('') + '</div>';
+  } else h += '<div class="muted small" style="margin-top:4px">尚未設定（按上面按鈕新增）</div>';
+
+  // ---- 節點初始電壓 ----
+  h += sec('節點初始電壓');
+  h += '<div class="row" style="gap:5px">' +
+       (nodes.length ? '<select class="w" id="nicSel" style="width:auto">' + nodeOptions(nodes, nodes[0]) + '</select><button class="ghost small" id="nicAdd">加入</button>' : '') +
+       '<button class="ghost small" id="addNIC"' + (tool === 'NIC' ? ' style="border-color:var(--accent);color:var(--accent)"' : '') + ' title="改用滑鼠在畫布點一下節點">畫布點選</button></div>';
+  const nks = Object.keys(nodeIC);
+  if (nks.length) nks.forEach(key => { h += '<div class="comp-row"><span class="mono small">(' + key + ')</span><input class="w" type="number" step="any" value="' + nodeIC[key] + '" data-nic="' + key + '"><span class="muted small">V</span><button class="ghost small" data-ndel="' + key + '">✕</button></div>'; });
+
+  // ---- 互感耦合 ----
+  h += sec('互感耦合');
+  if (inds.length >= 2) {
+    const opt = sel => inds.map(c => '<option value="' + c._uid + '"' + (sel === c._uid ? ' selected' : '') + '>' + c.type + c.id + '</option>').join('');
+    h += '<div class="row" style="gap:5px"><select class="w" id="mA" style="width:auto">' + opt(inds[0]._uid) + '</select><span class="muted">↔</span><select class="w" id="mB" style="width:auto">' + opt(inds[1]._uid) + '</select><button class="ghost small" id="addM">建立耦合</button></div>';
+  } else h += '<div class="muted small">需要至少兩個電感才能建立互感。</div>';
+  couplings.forEach((k, i) => {
+    h += '<div class="comp-row"><span class="tag">M' + (i+1) + '</span><span class="muted small">' + k.a.type + k.a.id + '↔' + k.b.type + k.b.id + '</span>' +
+      '<select data-mi="' + i + '" data-mf="mode"><option value="k"' + (k.useK?' selected':'') + '>k</option><option value="M"' + (!k.useK?' selected':'') + '>M</option></select>' +
+      (k.useK ? '<input class="w" type="number" step="0.05" min="-0.999" max="0.999" value="' + E.fmtNum(k.k) + '" data-mi="' + i + '" data-mf="k">'
+              : '<input class="w" type="number" step="any" value="' + E.fmtNum(k.M) + '" data-mi="' + i + '" data-mf="M">') +
+      '<span class="muted small">M=' + E.fmtNum(k.M) + ' k=' + E.fmtNum(k.k) + '</span><button class="ghost small" data-mdel="' + i + '">✕</button></div>';
+  });
+
+  el.innerHTML = h;
+  // wiring
+  const pv = el.querySelector('#addPV'); if (pv) pv.onclick = () => setTool(tool === 'PV' ? 'select' : 'PV');
+  const pi = el.querySelector('#addPI'); if (pi) pi.onchange = () => { const c = byUid(parseInt(pi.value)); if (c) { pushUndo(); toggleProbeI(c); updateProbe(); draw(); } };
+  const pvAdd = el.querySelector('#pvAdd'); if (pvAdd) pvAdd.onclick = () => {
+    const a = el.querySelector('#pvA').value.split(',').map(Number), b = el.querySelector('#pvB').value.split(',').map(Number);
+    if (a[0] === b[0] && a[1] === b[1]) { $('#cHint').textContent = '電壓探針兩個節點不可相同。'; return; }
+    pushUndo(); probes.push({ kind: 'V', a: { x: a[0], y: a[1] }, b: { x: b[0], y: b[1] } }); updateProbe(); draw();
+  };
+  const an = el.querySelector('#addNIC'); if (an) an.onclick = () => setTool(tool === 'NIC' ? 'select' : 'NIC');
+  const nicAdd = el.querySelector('#nicAdd'); if (nicAdd) nicAdd.onclick = () => { const k = el.querySelector('#nicSel').value; pushUndo(); if (!(k in nodeIC)) nodeIC[k] = 0; refreshExtra(); draw(); };
+  const am = el.querySelector('#addM'); if (am) am.onclick = () => { const a = byUid(parseInt(el.querySelector('#mA').value)), b = byUid(parseInt(el.querySelector('#mB').value)); if (a && b && a !== b) { pushUndo(); addCoupling(a, b); refreshExtra(); draw(); } };
+  el.querySelectorAll('[data-pflip]').forEach(b => b.onclick = () => flipProbe(parseInt(b.dataset.pflip)));
+  el.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => { pushUndo(); probes.splice(parseInt(b.dataset.pdel), 1); selectedProbe = -1; updateProbe(); draw(); });
+  el.querySelectorAll('[data-mf]').forEach(inp => inp.onchange = () => {
+    const k = couplings[parseInt(inp.dataset.mi)]; if (!k) return; pushUndo();
+    const f = inp.dataset.mf;
+    if (f === 'mode') k.useK = inp.value === 'k';
+    else if (f === 'k') { k.k = parseFloat(inp.value); k.M = k.k * Math.sqrt(k.a.value * k.b.value); }
+    else if (f === 'M') { k.M = parseFloat(inp.value); k.k = k.M / Math.sqrt(k.a.value * k.b.value); }
+    refreshExtra();
+  });
+  el.querySelectorAll('[data-mdel]').forEach(b => b.onclick = () => { pushUndo(); couplings.splice(parseInt(b.dataset.mdel), 1); refreshExtra(); draw(); });
+  el.querySelectorAll('[data-nic]').forEach(inp => inp.onchange = () => { pushUndo(); const v = parseFloat(inp.value); if (v) nodeIC[inp.dataset.nic] = v; else delete nodeIC[inp.dataset.nic]; refreshExtra(); draw(); });
+  el.querySelectorAll('[data-ndel]').forEach(b => b.onclick = () => { pushUndo(); delete nodeIC[b.dataset.ndel]; refreshExtra(); draw(); });
+}
+
+/* ---- multiwave chips ---- */
+const MW = [['step','階躍'],['impulse','脈衝'],['sin','正弦'],['cos','餘弦'],['ramp','斜坡'],['exp','指數'],['pulse','脈波']];
+MW.forEach(([w, n]) => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = n; c.onclick = () => { if (mwWaves.has(w)) mwWaves.delete(w); else mwWaves.add(w); c.classList.toggle('on'); }; $('#mwChips').appendChild(c); });
+
+/* ---- solve ---- */
+function couplingRefs(){ return couplings.map(k => ({ a: k.a, b: k.b, M: k.M })); }
+let lastCircuitSignals = null;
+let cSolving = false;
+const setCProgress = (frac, label) => {
+  const p = Math.max(0, Math.min(100, Math.round(frac * 100)));
+  $('#cProgFill').style.width = p + '%'; $('#cProgPct').textContent = p + '%';
+  if (label) $('#cProgLabel').textContent = label;
+};
+// yield to the browser so the progress bar can repaint between solve chunks.
+// setTimeout (not requestAnimationFrame) so it keeps firing even if the tab is
+// backgrounded; the event loop still repaints between macrotasks.
+const uiYield = () => new Promise(r => setTimeout(r, 0));
+
+async function solveCircuitUI(horizonOverride){
+  if (cSolving) return;                                  // ignore re-entrancy while solving
+  $('#cError').style.display = 'none';
+  try {
+    if (!probes.length) throw new Error('請先用「電壓探針」或「電流探針」選擇輸出（可放多個）');
+    const nodeExists = p => components.some(c => sameNode(c.a, p) || (c.b && sameNode(c.b, p)));
+    for (const pr of probes) {
+      if (pr.kind === 'V') { if (!nodeExists(pr.a) || !nodeExists(pr.b)) throw new Error('電壓探針節點已不存在，請重新設定'); }
+      else if (!pr.comp || components.indexOf(pr.comp) < 0) throw new Error('電流探針元件已不存在，請重新設定');
+    }
+    const opts = { nodeIC, couplings: couplingRefs() };
+    if (horizonOverride && horizonOverride > 0) opts.horizon = horizonOverride;
+    if ($('#cSteady') && $('#cSteady').checked) opts.steadyState = true;
+    const vsrc = components.filter(c => c.type === 'V');
+    // Build the list of analyses ("jobs"). Multi-waveform compare applies only with a
+    // single probe; otherwise each probe becomes one overlaid signal.
+    let jobs;
+    if (probes.length === 1 && mwWaves.size && vsrc.length) {
+      const src = vsrc[0];
+      jobs = [...mwWaves].map(w => ({ comps: components.map(c => c === src ? Object.assign({}, c, { wave: w }) : c), probe: probes[0], label: (MW.find(m => m[0] === w) || [w, w])[1] }));
+      $('#cFs').innerHTML = '多波形比較（套用到 ' + src.type + src.id + '）' + (opts.steadyState ? '・穩態' : '');
+    } else {
+      jobs = probes.map(p => ({ comps: components, probe: p, label: probeLabel(p) }));
+    }
+    const signals = []; let note = ''; let firstR = null;
+    cSolving = true; $('#cSolve').disabled = true; $('#cReplot').disabled = true;
+    $('#cProgress').classList.add('active'); setCProgress(0, '計算中…');
+    for (let ji = 0; ji < jobs.length; ji++) {
+      const job = jobs[ji];
+      const lbl = jobs.length > 1 ? (ji + 1) + '/' + jobs.length + '…' : '計算中…';
+      try {
+        const r = await E.analyzeCircuitAsync(job.comps, probeFor(job.probe, job.comps, components),
+          Object.assign({}, opts, { yieldTo: uiYield, onProgress: f => setCProgress((ji + f) / jobs.length, lbl) }));
+        signals.push(Object.assign({}, r, { label: job.label }));
+        if (!firstR) firstR = r;
+      } catch (e) { if (jobs.length === 1) throw e; }
+    }
+    if (jobs.length === probes.length && probes.length === 1) {       // single probe, single wave: show F(s)
+      const r = firstR, pr = probes[0];
+      if (r && r.Fs) $('#cFs').innerHTML = (pr.kind === 'V' ? 'V(s) = ' : 'I(s) = ') + fracHTML(r.Fs.num.map(v => E.cx(v)), r.Fs.den.map(v => E.cx(v))) + '<br><span class="small" style="margin-top:6px;display:inline-block">' + (pr.kind === 'V' ? 'v(t)' : 'i(t)') + ' = ' + r.renderHTML + '</span>';
+      else if (r) $('#cFs').innerHTML = '<span class="small">' + r.renderHTML + '</span>';
+      if (r && r.truncated) note = '⚠ ' + r.renderHTML;
+    } else if (probes.length > 1) {
+      $('#cFs').innerHTML = '多探針疊圖（' + probes.length + ' 條）' + (opts.steadyState ? '・穩態' : '');
+    }
+    if (!signals.length) throw new Error('求解失敗');
+    lastCircuitSignals = signals;
+    cView = null;                                        // fresh data → reset pan/zoom
+    $('#cOut').style.display = 'block';
+    plotSignals($('#cPlot'), signals, horizonOverride, cView);
+    if (!horizonOverride) $('#cTmax').value = '';
+    $('#cTmax').placeholder = 't≈' + E.fmtNum(signals[0].tEndHint) + 's';
+    $('#cNote').textContent = note || ('自動視窗 t≈' + E.fmtNum(signals[0].tEndHint) + 's，可自訂 t_max 後重繪');
+    $('#cLegend').innerHTML = signals.length > 1 ? signals.map((s, i) => '<span><b style="background:' + COLORS[i % COLORS.length] + '"></b>' + s.label + '</span>').join('') : '';
+    // 分析：極點 / 穩定性（只適用線性電路；分段/切換/穩態無單一轉移函數）
+    if (firstR && firstR.result && firstR.result.blocks) renderAnalysis(firstR.result, $('#cAnalysis'), { skipFs: true });
+    else $('#cAnalysis').innerHTML = '<span class="muted">' + (firstR && firstR.steadyState ? '週期穩態（PSS）' : '分段/切換電路') + '：無單一轉移函數，故不顯示極點分析。</span>';
+  } catch (e) { $('#cOut').style.display = 'none'; $('#cError').style.display = 'block'; $('#cErrorMsg').textContent = '⚠ ' + e.message; }
+  finally { cSolving = false; $('#cSolve').disabled = false; $('#cReplot').disabled = false; $('#cProgress').classList.remove('active'); }
+}
+$('#cSolve').onclick = () => solveCircuitUI(0);
+// replot: reuse the already-computed signals instantly when the requested window
+// fits what we solved; only re-solve (slow) when a longer window is asked for.
+$('#cReplot').onclick = () => {
+  if (cSolving) return;
+  const h = parseFloat($('#cTmax').value) || 0;
+  cView = null;                                          // new t_max → reset pan/zoom
+  if (lastCircuitSignals && lastCircuitSignals.length && (!h || h <= (lastCircuitSignals[0].tEndHint || 0) * 1.0001)) {
+    plotSignals($('#cPlot'), lastCircuitSignals, h, cView);
+  } else solveCircuitUI(h);
+};
+
+/* ---- waveform pan / zoom ---- */
+let cView = null;                                        // {xMin,xMax,yMin,yMax} or null (auto)
+const cPlot = $('#cPlot');
+function replotCircuit(){ if (lastCircuitSignals) plotSignals(cPlot, lastCircuitSignals, parseFloat($('#cTmax').value) || 0, cView); }
+function plotPx(ev){ const r = cPlot.getBoundingClientRect(); return { x: (ev.clientX - r.left) * cPlot.width / r.width, y: (ev.clientY - r.top) * cPlot.height / r.height }; }
+function curView(){ const p = cPlot._plot; return cView || (p ? { xMin: p.xMin, xMax: p.xMax, yMin: p.yMin, yMax: p.yMax } : null); }
+cPlot.style.cursor = 'grab';
+cPlot.addEventListener('wheel', ev => {
+  if (!lastCircuitSignals) return; const p = cPlot._plot; if (!p) return;
+  ev.preventDefault();
+  const v = curView(), pt = plotPx(ev);
+  const tx = v.xMin + (pt.x - p.ml) / p.pw * (v.xMax - v.xMin), vy = v.yMin + (1 - (pt.y - p.mt) / p.ph) * (v.yMax - v.yMin);
+  const f = ev.deltaY < 0 ? 0.85 : 1 / 0.85;             // wheel up = zoom in
+  cView = { xMin: tx - (tx - v.xMin) * f, xMax: tx + (v.xMax - tx) * f, yMin: vy - (vy - v.yMin) * f, yMax: vy + (v.yMax - vy) * f };
+  replotCircuit();
+}, { passive: false });
+let cPan = null;
+cPlot.addEventListener('mousedown', ev => { if (!lastCircuitSignals || !cPlot._plot) return; cView = curView(); cPan = { x: ev.clientX, y: ev.clientY, v: Object.assign({}, cView) }; cPlot.style.cursor = 'grabbing'; });
+window.addEventListener('mousemove', ev => {
+  if (!cPan) return; const p = cPlot._plot, r = cPlot.getBoundingClientRect();
+  const dx = (ev.clientX - cPan.x) * cPlot.width / r.width, dy = (ev.clientY - cPan.y) * cPlot.height / r.height;
+  const dt = -dx / p.pw * (cPan.v.xMax - cPan.v.xMin), dv = dy / p.ph * (cPan.v.yMax - cPan.v.yMin);
+  cView = { xMin: cPan.v.xMin + dt, xMax: cPan.v.xMax + dt, yMin: cPan.v.yMin + dv, yMax: cPan.v.yMax + dv };
+  replotCircuit();
+});
+window.addEventListener('mouseup', () => { if (cPan) { cPan = null; cPlot.style.cursor = 'grab'; } });
+cPlot.addEventListener('dblclick', () => { cView = null; replotCircuit(); });   // double-click = reset
+$('#cResetView').onclick = () => { cView = null; replotCircuit(); };
+function probeFor(pr, comps2, orig){ // remap probe.comp (for I probe) to the cloned comps array
+  if (pr.kind === 'V') return pr;
+  const idx = orig.indexOf(pr.comp); return { kind: 'I', comp: comps2[idx], dir: pr.dir };
+}
+
+/* ---- clear / presets ---- */
+function clearCircuit(){ pushUndo(); components = []; couplings = []; nodeIC = {}; counters = {}; uidc = 1; pending = null; probes = []; selComps = []; selectedProbe = -1; updateProbe(); draw(); refreshList(); refreshExtra(); $('#cOut').style.display = 'none'; $('#cError').style.display = 'none'; }
+$('#cClear').onclick = () => { clearCircuit(); undoStack = []; };
+function setProbeV(a, b){ probes = [{ kind: 'V', a, b }]; updateProbe(); }
+function P(x, y){ return { x, y }; }
+function addC(o){ o._uid = uidc++; o.id = nextId(o.type); components.push(o); return o; }
+
+$('#cEx1').onclick = () => { clearCircuit(); undoStack = [];
+  addC({ type:'V', a:P(2,2), b:P(2,7), wave:'step', amp:1, Ts:2, duty:0.5, freq:2 });
+  addC({ type:'R', a:P(2,2), b:P(8,2), value:1 });
+  addC({ type:'C', a:P(8,2), b:P(8,7), value:1, v0:0 });
+  addC({ type:'W', a:P(2,7), b:P(8,7) }); addC({ type:'GND', a:P(2,7) });
+  setProbeV(P(8,2), P(8,7)); draw(); refreshList(); refreshExtra();
+};
+$('#cEx2').onclick = () => { clearCircuit(); undoStack = [];
+  addC({ type:'V', a:P(2,2), b:P(2,7), wave:'step', amp:1, Ts:2, duty:0.5, freq:2 });
+  addC({ type:'R', a:P(2,2), b:P(6,2), value:2 });
+  addC({ type:'L', a:P(6,2), b:P(10,2), value:1, i0:0 });
+  addC({ type:'C', a:P(10,2), b:P(10,7), value:0.5, v0:0 });
+  addC({ type:'W', a:P(2,7), b:P(10,7) }); addC({ type:'GND', a:P(2,7) });
+  setProbeV(P(10,2), P(10,7)); draw(); refreshList(); refreshExtra();
+};
+$('#cEx3').onclick = () => { clearCircuit(); undoStack = [];
+  addC({ type:'V', a:P(2,2), b:P(2,7), wave:'sin', amp:1, freq:2, Ts:2, duty:0.5 });
+  addC({ type:'D', a:P(2,2), b:P(7,2), init:'off' });
+  addC({ type:'R', a:P(7,2), b:P(7,7), value:1 });
+  addC({ type:'W', a:P(2,7), b:P(7,7) }); addC({ type:'GND', a:P(2,7) });
+  setProbeV(P(7,2), P(7,7)); draw(); refreshList(); refreshExtra();
+  $('#cHint').textContent = '半波整流：sin 電壓源→二極體→R。按求解看半波整流波形。';
+};
+$('#cEx4').onclick = () => { clearCircuit(); undoStack = [];
+  // 一次側：V 源支路 ∥ L₁（耦合），用導線並接 —— 各元件分開放置，避免符號/標籤重疊
+  addC({ type:'V', a:P(2,2), b:P(2,6), wave:'step', amp:1, Ts:2, duty:0.5, freq:2 });
+  const La = addC({ type:'L', a:P(5,2), b:P(5,6), value:1, i0:0 });
+  addC({ type:'W', a:P(2,2), b:P(5,2) }); addC({ type:'W', a:P(2,6), b:P(5,6) });
+  addC({ type:'GND', a:P(2,6) });
+  // 二次側：L₂（耦合）∥ R，用導線並接
+  const Lb = addC({ type:'L', a:P(9,2), b:P(9,6), value:2, i0:0 });
+  addC({ type:'R', a:P(12,2), b:P(12,6), value:3 });
+  addC({ type:'W', a:P(9,2), b:P(12,2) }); addC({ type:'W', a:P(9,6), b:P(12,6) });
+  addC({ type:'GND', a:P(9,6) });
+  couplings.push({ a:La, b:Lb, useK:true, k:0.7071, M:0.7071*Math.sqrt(1*2) });
+  setProbeV(P(12,2), P(12,6)); draw(); refreshList(); refreshExtra();
+  $('#cHint').textContent = '變壓器：一次側電壓源驅動 L₁，互感耦合到二次側 L₂→R。輸出為 R 兩端電壓。';
+};
+
+$('#cEx5').onclick = () => { clearCircuit(); undoStack = [];
+  // Buck converter: Vin step 10 -> PWM switch -> (freewheel diode) -> L -> output RC
+  addC({ type:'V', a:P(2,2), b:P(2,6), wave:'step', amp:10, Ts:2, duty:0.5, freq:2 });
+  addC({ type:'SW', a:P(2,2), b:P(5,2), mode:'pwm', Tsw:5e-6, duty:0.5, state:'open', tSwitch:0, Ron:0 });
+  addC({ type:'D', a:P(5,6), b:P(5,2), init:'off', Vf:0 });    // freewheel: anode=gnd, cathode=switch node
+  addC({ type:'L', a:P(5,2), b:P(9,2), value:47e-6, i0:0 });
+  addC({ type:'R', a:P(9,2), b:P(9,6), value:10 });
+  addC({ type:'C', a:P(12,2), b:P(12,6), value:10e-6, v0:0 });
+  addC({ type:'W', a:P(2,6), b:P(5,6) }); addC({ type:'W', a:P(5,6), b:P(9,6) }); addC({ type:'W', a:P(9,6), b:P(12,6) });
+  addC({ type:'W', a:P(9,2), b:P(12,2) });
+  addC({ type:'GND', a:P(2,6) });
+  setProbeV(P(9,2), P(9,6)); $('#cSteady').checked = true; draw(); refreshList(); refreshExtra();
+  $('#cHint').textContent = 'Buck(二極體)：PWM 200kHz, duty 0.5 → 輸出≈Vin×duty=5V。已勾「穩態(PSS)」直接求週期穩態；取消勾選則看暫態（極低損耗的理想電路暫態會長時間振盪）。';
+};
+$('#cEx6').onclick = () => { clearCircuit(); undoStack = [];
+  // Synchronous Buck: high-side SW + complementary low-side SW (no freewheel diode)
+  addC({ type:'V', a:P(2,2), b:P(2,6), wave:'step', amp:10, Ts:2, duty:0.5, freq:2 });
+  addC({ type:'SW', a:P(2,2), b:P(5,2), mode:'pwm', Tsw:5e-6, duty:0.5, Ron:0.02, inv:false });          // high-side
+  addC({ type:'SW', a:P(5,6), b:P(5,2), mode:'pwm', Tsw:5e-6, duty:0.5, Ron:0.02, inv:true });           // low-side (complementary)
+  addC({ type:'L', a:P(5,2), b:P(9,2), value:47e-6, i0:0 });
+  addC({ type:'R', a:P(9,2), b:P(9,6), value:10 });
+  addC({ type:'C', a:P(12,2), b:P(12,6), value:10e-6, v0:0 });
+  addC({ type:'W', a:P(2,6), b:P(5,6) }); addC({ type:'W', a:P(5,6), b:P(9,6) }); addC({ type:'W', a:P(9,6), b:P(12,6) });
+  addC({ type:'W', a:P(9,2), b:P(12,2) });
+  addC({ type:'GND', a:P(2,6) });
+  setProbeV(P(9,2), P(9,6)); $('#cSteady').checked = true; draw(); refreshList(); refreshExtra();
+  $('#cHint').textContent = '同步 Buck：上臂 + 互補下臂開關（取代飛輪二極體，含 Rₒₙ=0.02Ω）。輸出≈Vin×duty=5V。已勾「穩態(PSS)」。';
+};
+$('#cEx7').onclick = () => { clearCircuit(); undoStack = [];
+  // Boost 升壓：Vin → L → 節點A；低側開關(A→gnd)；升壓二極體(A→輸出)；輸出 RC。Vout=Vin/(1−duty)
+  addC({ type:'V', a:P(2,2), b:P(2,6), wave:'step', amp:5, Ts:2, duty:0.5, freq:2 });
+  addC({ type:'L', a:P(2,2), b:P(5,2), value:47e-6, i0:0 });
+  addC({ type:'SW', a:P(5,2), b:P(5,6), mode:'pwm', Tsw:5e-6, duty:0.5, state:'open', tSwitch:0, Ron:0 });   // 低側開關
+  addC({ type:'D', a:P(5,2), b:P(9,2), init:'off', Vf:0 });    // 升壓二極體：陽極=A，陰極=輸出
+  addC({ type:'R', a:P(9,2), b:P(9,6), value:20 });
+  addC({ type:'C', a:P(12,2), b:P(12,6), value:10e-6, v0:0 });
+  addC({ type:'W', a:P(2,6), b:P(5,6) }); addC({ type:'W', a:P(5,6), b:P(9,6) }); addC({ type:'W', a:P(9,6), b:P(12,6) });
+  addC({ type:'W', a:P(9,2), b:P(12,2) });
+  addC({ type:'GND', a:P(2,6) });
+  setProbeV(P(9,2), P(9,6)); $('#cSteady').checked = true; draw(); refreshList(); refreshExtra();
+  $('#cHint').textContent = 'Boost 升壓：Vin=5V、低側 PWM 200kHz duty 0.5。輸出 ≈ Vin/(1−duty) = 10V。已勾「穩態(PSS)」；取消勾選看暫態。';
+};
+
+/* ---- responsive canvas: fill the card width, recompute grid, redraw ---- */
+function resizeCanvas(){
+  const avail = (cv.parentElement && cv.parentElement.clientWidth) || 800;
+  const W = Math.max(700, Math.min(1300, Math.round(avail - 34)));
+  // cap height to the viewport (minus header/tabs/toolbar) so the editor fits
+  // without the page needing to scroll — avoids focus/scroll jumps while placing.
+  const vh = (window.innerHeight || 800) - 250;
+  const H = Math.max(420, Math.min(760, Math.round(W * 0.56), vh));
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  GW = Math.floor((W - 2 * OX) / STEP);
+  GH = Math.floor((H - 2 * OX) / STEP);
+  draw();
+  // size the result waveform plot to match, and re-plot if a result is showing
+  const cp = $('#cPlot'); if (cp) { const pw = Math.max(760, Math.min(1300, W)); if (cp.width !== pw) { cp.width = pw; cp.height = Math.max(360, Math.min(480, Math.round(pw * 0.4))); } if (lastCircuitSignals) plotSignals(cp, lastCircuitSignals, parseFloat($('#cTmax').value) || 0, (typeof cView !== 'undefined' ? cView : null)); }
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); refreshList(); updateProbe();
+
+/* ===================== SELF TEST ===================== */
+$('#runTests').onclick = () => {
+  const res = E.runSelfTest(); const pass = res.filter(r => r.ok).length;
+  let h = '<div class="small" style="margin-bottom:8px">' + (pass === res.length ? '<span class="ok">✓ 全部通過 (' + pass + '/' + res.length + ')</span>' : '<span class="err">✗ ' + pass + '/' + res.length + '</span>') + '</div><table><tr><th>測試</th><th>結果</th><th>誤差</th></tr>';
+  res.forEach(r => { h += '<tr><td class="mono">' + r.name + '</td><td><span class="pill ' + (r.ok ? 'pass">通過' : 'fail">失敗') + '</span></td><td class="mono">' + (r.error ? r.error : (isFinite(r.err) ? r.err.toExponential(1) : 'NaN')) + '</td></tr>'; });
+  $('#testOut').innerHTML = h + '</table>';
+};
+
+computeFormula();
+</script>
+</body>
+</html>
